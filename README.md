@@ -2,7 +2,7 @@
 
 ## A Compact 115 Million Parameter Model - 0.5GB
 
-Welcome to BabyJoey, a streamlined language model designed for efficient performance. This document provides a detailed overview of the project structure to help you get started quickly.
+Welcome to BabyJoey, a streamlined Austrlian language model designed for efficient performance. This document provides a detailed overview of the project structure to help you get started quickly.
 
 ---
 
