@@ -48,9 +48,6 @@ BabyJoey is a lightweight language model inspired by GPT-1, featuring 115 millio
 ### 🚀 main.py
 The entry point of BabyJoey. This script parses arguments, sets up configurations, and invokes the training loop.
 
-### ⚙️ config.py
-Contains configuration settings and hyperparameters for easy management and modification.
-
 ### 📋 requirements.txt
 Lists the dependencies required to run BabyJoey, which can be installed using `pip`.
 
@@ -69,6 +66,8 @@ Lists the dependencies required to run BabyJoey, which can be installed using `p
 
 #### 🛠️ utils/
 - **utils.py**: Provides utility functions used throughout the project, such as logging, saving/loading models, and calculating metrics.
+- **config.py**: Contains configuration settings and hyperparameters for easy management and modification.
+- **config.yaml**: This is where you change the parameters, and it updates the main config file 
 
 #### 📜 scripts/
 - **train.sh**: A shell script to start the training process.
