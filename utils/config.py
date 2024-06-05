@@ -1,5 +1,6 @@
-@dataclass
+from dataclasses import dataclass
 
+@dataclass
 class BabyJoeyConfig:
     vocab_size: int
     n_embd: int
