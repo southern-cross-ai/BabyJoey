@@ -1,9 +1,10 @@
-import torch
+:import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from utils.config import BabyJoeyConfig
 
 class Embeddings(nn.Module):
-    def __init__(self, config: GPT1Config):
+    def __init__(self, config: BabyJoeyConfig):
         super(Embeddings, self).__init__()
         self.token_embedding = nn.Embedding(config.vocab_size, config.n_embd)
         self.position_embedding = nn.Embedding(config.max_position_embeddings, config.n_embd)
@@ -13,7 +14,7 @@ class Embeddings(nn.Module):
         tokens = self.token_embedding(x)
 
         # Get positional embeddings
-        positions = torch.arange(x.size(1), device=x.device).unsqueeze(0)
+        positions = torch.arange(x.size(1), device=x.device).unsqueeze(0).expand_as(x)
         positions = self.position_embedding(positions)
 
         # Combine token and positional embeddings
@@ -21,7 +22,7 @@ class Embeddings(nn.Module):
         return x
 
 class TransformerBlock(nn.Module):
-    def __init__(self, config: GPT1Config):
+    def __init__(self, config: BabyJoeyConfig):
         super(TransformerBlock, self).__init__()
         self.attn = nn.MultiheadAttention(config.n_embd, config.n_head)
         self.ln1 = nn.LayerNorm(config.n_embd)
@@ -46,7 +47,7 @@ class TransformerBlock(nn.Module):
         return x
 
 class BabyJoey(nn.Module):
-    def __init__(self, config: GPT1Config):
+    def __init__(self, config: BabyJoeyConfig):
         super(BabyJoey, self).__init__()
         
         # Embeddings
@@ -72,4 +73,3 @@ class BabyJoey(nn.Module):
         logits = self.head(x)
 
         return logits
-
