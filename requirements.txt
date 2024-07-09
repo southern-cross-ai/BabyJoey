@@ -1,6 +1,5 @@
 torch
 wandb
-bpython
-jupyterlab
 datasets
 transformers
+sentencepiece
