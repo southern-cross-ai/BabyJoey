@@ -2,4 +2,5 @@ torch
 wandb
 datasets
 transformers
-sentencepiece
+torchtnt
+
