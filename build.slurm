@@ -17,8 +17,9 @@ echo "Running on node $(hostname)"
 echo "Job ID: $SLURM_JOB_ID"
 echo "_________________________________________________"
 
-# Run the Singularity container with GPU support and save output
-singularity exec --nv --bind /home/projects/BabyJoey:/home/u1138167 .singularity/ubuntu.sif python main.py > BabyJoey/logs/output_%j.txt 2>&1
+# Install dependencies from requirements.txt and then run the main script
+singularity exec --nv --bind /home/projects/BabyJoey:/home/u1138167 .singularity/ubuntu.sif \
+    bash -c "pip install -r /home/u1138167/requirements.txt && python main.py" > BabyJoey/logs/output_%j.txt 2>&1
 
 echo "_________________________________________________"
 # Log the finish time

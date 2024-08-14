@@ -16,3 +16,6 @@ def load_config(config_path: str) -> BabyJoeyConfig:
     with open(config_path, 'r') as file:
         config_dict = yaml.safe_load(file)
     return BabyJoeyConfig(**config_dict)
+
+# Automatically load the config when this module is imported
+config = load_config('config.yaml')
