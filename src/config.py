@@ -7,6 +7,7 @@ class BabyJoeyConfig:
     n_embd: int
     n_head: int
     n_layer: int
+    n_layer_decoder: int = 0 
     max_position_embeddings: int = 512
     learning_rate: float = 1e-4
     batch_size: int = 32
@@ -18,4 +19,4 @@ def load_config(config_path: str) -> BabyJoeyConfig:
     return BabyJoeyConfig(**config_dict)
 
 # Automatically load the config when this module is imported
-config = load_config('config.yaml')
+config = load_config('src/config.yaml')
