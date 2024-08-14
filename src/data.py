@@ -14,6 +14,6 @@ class CustomDataset(Dataset):
         # Return a single data point as a tensor
         pass
 
-def get_dataloader(config):
+def get_data(config):
     dataset = CustomDataset(config['data_path'])
     return DataLoader(dataset, batch_size=config['batch_size'], shuffle=True)

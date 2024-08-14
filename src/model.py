@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from utils.config import BabyJoeyConfig
+from src.model import BabyJoeyConfig
 
 class Embeddings(nn.Module):
     def __init__(self, config: BabyJoeyConfig):
