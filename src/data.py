@@ -1,5 +1,5 @@
 import torch
-from datasets import load_dataset
+from datasets import load_dataset, DatasetDict
 from transformers import AutoTokenizer
 from torch.utils.data import DataLoader
 from src.config import BabyJoeyConfig
@@ -16,6 +16,15 @@ class GutenbergData:
     def dataset(self):
         # Load the dataset based on the configuration
         raw_dataset = load_dataset(self.config.dataset_name)
+        
+        # Check if the dataset has a validation split, if not create one
+        if 'validation' not in raw_dataset:
+            train_test_split = raw_dataset['train'].train_test_split(test_size=0.1)
+            raw_dataset = DatasetDict({
+                'train': train_test_split['train'],
+                'validation': train_test_split['test']
+            })
+
         return raw_dataset
 
     def tokenized(self, raw_dataset):
@@ -48,7 +57,7 @@ class GutenbergData:
         dataloader = DataLoader(
             tokenized_dataset[split], 
             batch_size=self.config.batch_size, 
-            shuffle=True, 
+            shuffle=True if split == 'train' else False, 
             collate_fn=collate_fn
         )
         

@@ -11,13 +11,18 @@ class BabyJoeyConfig:
     max_position_embeddings: int = 512
     learning_rate: float = 1e-4
     batch_size: int = 32
-    num_epochs: int = 10
+    epochs: int = 10
     dataset_name: str = "SouthernCrossAI/Project_Gutenberg_Australia"
 
 
 def load_config(config_path: str) -> BabyJoeyConfig:
     with open(config_path, 'r') as file:
         config_dict = yaml.safe_load(file)
+    
+    # Explicitly cast learning_rate to float
+    if 'learning_rate' in config_dict:
+        config_dict['learning_rate'] = float(config_dict['learning_rate'])
+    
     return BabyJoeyConfig(**config_dict)
 
 # Automatically load the config when this module is imported

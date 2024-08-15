@@ -1,7 +1,6 @@
 import torch
 import torch.optim as optim
-from torchtnt.framework import fit, init_train_state
-from torchtnt.utils import ProgressBar
+from torchtnt.framework import fit, State
 import logging
 
 class Loop:
@@ -13,7 +12,7 @@ class Loop:
         self.device = device
 
     def create_optimizer(self):
-        return optim.Adam(self.model.parameters(), lr=self.config.learning_rate)
+        return optim.AdamW(self.model.parameters(), lr=self.config.learning_rate)
 
     def train_step(self, state, data):
         model = state.model
@@ -23,7 +22,12 @@ class Loop:
         model.train()
         inputs, targets = self.to_device(data)
         outputs = model(inputs)
-        loss = loss_fn(outputs, targets)
+
+        # Shift the outputs and targets for language modeling (similar to GPT-2)
+        shift_outputs = outputs[..., :-1, :].contiguous()
+        shift_targets = targets[..., 1:].contiguous()
+
+        loss = loss_fn(shift_outputs.view(-1, shift_outputs.size(-1)), shift_targets.view(-1))
 
         optimizer.zero_grad()
         loss.backward()
@@ -39,7 +43,12 @@ class Loop:
         with torch.no_grad():
             inputs, targets = self.to_device(data)
             outputs = model(inputs)
-            loss = loss_fn(outputs, targets)
+
+            # Shift the outputs and targets for evaluation
+            shift_outputs = outputs[..., :-1, :].contiguous()
+            shift_targets = targets[..., 1:].contiguous()
+
+            loss = loss_fn(shift_outputs.view(-1, shift_outputs.size(-1)), shift_targets.view(-1))
 
         return {"val_loss": loss.item()}
 
@@ -47,23 +56,25 @@ class Loop:
         return torch.nn.CrossEntropyLoss()
 
     def to_device(self, data):
-        inputs, targets = data
-        return inputs.to(self.device), targets.to(self.device)
+        inputs = data['input_ids']
+        return inputs.to(self.device), inputs.to(self.device)
 
     def create(self):
         optimizer = self.create_optimizer()
-        state = init_train_state(dataloader=self.train_loader, model=self.model, optimizer=optimizer, max_epochs=self.config.epochs)
+        state = State(dataloader=self.train_loader, model=self.model, optimizer=optimizer, max_epochs=self.config.epochs)
         return state
 
     def run(self, state):
         try:
+            # You can add a progress bar or integrate W&B here
             fit(
                 state,
                 self.train_loader,
                 self.val_loader,
                 self.train_step,
                 self.val_step,
-                callbacks=[ProgressBar()]
+                # Add progress bar or W&B callback here
+                callbacks=[]
             )
         except Exception as e:
             logging.error(f"Training failed: {e}")
