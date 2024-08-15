@@ -1,4 +1,4 @@
-vocab_size: 30522
+vocab_size: 50257
 n_embd: 768
 n_head: 12
 n_layer: 12
@@ -7,4 +7,5 @@ max_position_embeddings: 512
 learning_rate: 1e-4
 batch_size: 32
 num_epochs: 10
+dataset_name: "SouthernCrossAI/Project_Gutenberg_Australia"
 

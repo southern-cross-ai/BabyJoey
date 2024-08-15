@@ -50,9 +50,6 @@ class BabyJoey(nn.Module):
         # Embeddings
         self.embeddings = Embeddings(config)
         
-        # Encoder Blocks (based on n_layer)
-        self.encoder_blocks = nn.ModuleList([TransformerBlock(config) for _ in range(config.n_layer)])
-
         # Decoder Blocks (based on n_layer_decoder)
         self.decoder_blocks = nn.ModuleList([TransformerBlock(config) for _ in range(config.n_layer_decoder)])
 
@@ -60,17 +57,13 @@ class BabyJoey(nn.Module):
         self.ln_f = nn.LayerNorm(config.n_embd)
         self.head = nn.Linear(config.n_embd, config.vocab_size, bias=False)
 
-    def forward(self, x, encoder_output=None):
+    def forward(self, x):
         # Get embeddings
         x = self.embeddings(x)
 
-        # Apply encoder blocks
-        for block in self.encoder_blocks:
+        # Apply decoder blocks
+        for block in self.decoder_blocks:
             x = block(x)
-
-        if encoder_output is not None:  # If using a decoder
-            for block in self.decoder_blocks:
-                x = block(x + encoder_output)  # Combine with encoder output
 
         # Layer norm and output
         x = self.ln_f(x)
