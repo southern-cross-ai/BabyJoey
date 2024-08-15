@@ -1,6 +1,8 @@
 print("Starting main.py")
+import torch
 from src.data import GutenbergData
 from src.config import config
+from src.model import BabyJoey
 print("Imports done - Running main function")
 
 def main():
@@ -12,7 +14,7 @@ def main():
     # Initialize the model, data loaders, and training loop
     model = BabyJoey(config)
     gutenberg_data = GutenbergData(config=config)
-    dataloader = gutenberg_data.get_dataloader(split='train')
+    dataloader = gutenberg_data.dataloader(split='train')
     print("Model and data loaded successfully")
 
     # Test the DataLoader by iterating over it and printing out a batch
@@ -31,7 +33,7 @@ def main():
     # # Run the training loop
     # training_loop.run(state)
     
-    print("Main function done")
+    print("Worked untill the end, Yeay!")
 
 if __name__ == '__main__':
     main()
