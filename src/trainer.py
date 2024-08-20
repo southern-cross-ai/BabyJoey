@@ -1,81 +1,64 @@
+# train.py
 import torch
-import torch.optim as optim
-from torchtnt.framework import fit, State
-import logging
+from torchtnt.engine import Engine
+from torchtnt.state import State
 
-class Loop:
-    def __init__(self, model, train_loader, val_loader, config, device=None):
-        self.model = model.to(device)
-        self.train_loader = train_loader
-        self.val_loader = val_loader
-        self.config = config
-        self.device = device
+def train_step(state: State, batch):
+    model = state.model
+    optimizer = state.optimizer
+    loss_fn = state.loss_fn
 
-    def create_optimizer(self):
-        return optim.AdamW(self.model.parameters(), lr=self.config.learning_rate)
+    model.train()
+    data, target = batch
+    optimizer.zero_grad()
+    output = model(data)
+    loss = loss_fn(output, target)
+    loss.backward()
+    optimizer.step()
+    return {"loss": loss.item()}
 
-    def train_step(self, state, data):
-        model = state.model
-        optimizer = state.optimizers[0]
-        loss_fn = self.get_loss_function()
+def validate(state: State):
+    model = state.model
+    loss_fn = state.loss_fn
+    dataloader = state.val_dataloader
 
-        model.train()
-        inputs, targets = self.to_device(data)
-        outputs = model(inputs)
+    model.eval()
+    val_loss = 0.0
+    with torch.no_grad():
+        for batch in dataloader:
+            data, target = batch
+            output = model(data)
+            loss = loss_fn(output, target)
+            val_loss += loss.item()
 
-        # Shift the outputs and targets for language modeling (similar to GPT-2)
-        shift_outputs = outputs[..., :-1, :].contiguous()
-        shift_targets = targets[..., 1:].contiguous()
+    val_loss /= len(dataloader)
+    return {"val_loss": val_loss}
 
-        loss = loss_fn(shift_outputs.view(-1, shift_outputs.size(-1)), shift_targets.view(-1))
+def fit(model, optimizer, loss_fn, train_loader, val_loader, num_epochs):
+    # Initialize state
+    state = State(
+        model=model,
+        optimizer=optimizer,
+        dataloader=train_loader,
+        val_dataloader=val_loader,
+        loss_fn=loss_fn,
+        max_epochs=num_epochs
+    )
 
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+    # Define the training loop
+    def train_loop(state: State):
+        for epoch in range(state.max_epochs):
+            # Training
+            for batch in state.dataloader:
+                train_output = train_step(state, batch)
+                print(f"Epoch {epoch}, Train Loss: {train_output['loss']}")
 
-        return {"loss": loss.item()}
+            # Validation
+            val_output = validate(state)
+            print(f"Epoch {epoch}, Validation Loss: {val_output['val_loss']}")
 
-    def val_step(self, state, data):
-        model = state.model
-        loss_fn = self.get_loss_function()
+    # Create the Engine
+    engine = Engine(train_loop)
 
-        model.eval()
-        with torch.no_grad():
-            inputs, targets = self.to_device(data)
-            outputs = model(inputs)
-
-            # Shift the outputs and targets for evaluation
-            shift_outputs = outputs[..., :-1, :].contiguous()
-            shift_targets = targets[..., 1:].contiguous()
-
-            loss = loss_fn(shift_outputs.view(-1, shift_outputs.size(-1)), shift_targets.view(-1))
-
-        return {"val_loss": loss.item()}
-
-    def get_loss_function(self):
-        return torch.nn.CrossEntropyLoss()
-
-    def to_device(self, data):
-        inputs = data['input_ids']
-        return inputs.to(self.device), inputs.to(self.device)
-
-    def create(self):
-        optimizer = self.create_optimizer()
-        state = State(dataloader=self.train_loader, model=self.model, optimizer=optimizer, max_epochs=self.config.epochs)
-        return state
-
-    def run(self, state):
-        try:
-            # You can add a progress bar or integrate W&B here
-            fit(
-                state,
-                self.train_loader,
-                self.val_loader,
-                self.train_step,
-                self.val_step,
-                # Add progress bar or W&B callback here
-                callbacks=[]
-            )
-        except Exception as e:
-            logging.error(f"Training failed: {e}")
-            raise e
+    # Run the training and validation process
+    engine.run(state)
