@@ -1,64 +1,65 @@
-# train.py
-import torch
-from torchtnt.engine import Engine
-from torchtnt.state import State
+import torchtnt as tnt
+from torchtnt.train import TrainLoop
+from torchtnt.callbacks import EarlyStopping, ModelCheckpoint
+from torchtnt.engine import Engine, State
 
-def train_step(state: State, batch):
-    model = state.model
-    optimizer = state.optimizer
-    loss_fn = state.loss_fn
+class Trainer:
+    def __init__(self, model, optimizer, train_loader, val_loader, max_epochs=10, checkpoint_path='best_model.pth'):
+        # Initialize the state with model, optimizer, and data loaders
+        self.state = State(
+            model=model,
+            optimizer=optimizer,
+            train_dataloader=train_loader,
+            eval_dataloader=val_loader,
+            max_epochs=max_epochs
+        )
 
-    model.train()
-    data, target = batch
-    optimizer.zero_grad()
-    output = model(data)
-    loss = loss_fn(output, target)
-    loss.backward()
-    optimizer.step()
-    return {"loss": loss.item()}
+        # Initialize the training loop
+        self.train_loop = TrainLoop(self.state)
 
-def validate(state: State):
-    model = state.model
-    loss_fn = state.loss_fn
-    dataloader = state.val_dataloader
+        # Set up callbacks
+        # self.early_stopping = tnt.callbacks.EarlyStopping(monitor='val_loss', patience=5)
+        # self.checkpoint = tnt.callbacks.ModelCheckpoint(filepath=checkpoint_path, monitor='val_loss')
 
-    model.eval()
-    val_loss = 0.0
-    with torch.no_grad():
-        for batch in dataloader:
-            data, target = batch
-            output = model(data)
-            loss = loss_fn(output, target)
-            val_loss += loss.item()
+        # Initialize the Engine
+        self.engine = Engine(
+            train_loop=self.train_loop, 
+            eval_loop=None,  # You could add an evaluation loop here if needed
+            callbacks=[self.early_stopping, self.checkpoint]
+        )
 
-    val_loss /= len(dataloader)
-    return {"val_loss": val_loss}
+    def fit(self):
+        # Start the training process
+        self.engine.run()
 
-def fit(model, optimizer, loss_fn, train_loader, val_loader, num_epochs):
-    # Initialize state
-    state = State(
-        model=model,
-        optimizer=optimizer,
-        dataloader=train_loader,
-        val_dataloader=val_loader,
-        loss_fn=loss_fn,
-        max_epochs=num_epochs
-    )
+    def resume_training(self, checkpoint_path):
+        # Optionally, you can add functionality to resume training from a checkpoint
+        # Load the checkpoint and update the state
+        # Example (pseudo-code):
+        # checkpoint = torch.load(checkpoint_path)
+        # self.state.model.load_state_dict(checkpoint['model_state_dict'])
+        # self.state.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        # self.engine.run(start_epoch=checkpoint['epoch'] + 1)
+        pass
 
-    # Define the training loop
-    def train_loop(state: State):
-        for epoch in range(state.max_epochs):
-            # Training
-            for batch in state.dataloader:
-                train_output = train_step(state, batch)
-                print(f"Epoch {epoch}, Train Loss: {train_output['loss']}")
+    def evaluate(self):
+        # If you want a separate method to run only the evaluation loop
+        pass
 
-            # Validation
-            val_output = validate(state)
-            print(f"Epoch {epoch}, Validation Loss: {val_output['val_loss']}")
+# Example usage
+# if __name__ == "__main__":
+#     # Import your model, optimizer, data loaders, etc.
+#     from models.my_model import MyModel
+#     from data.dataloader import get_train_loader, get_val_loader
+#     from torch.optim import Adam
 
-    # Create the Engine
-    engine = Engine(train_loop)
+#     model = MyModel()
+#     optimizer = Adam(model.parameters())
+#     train_loader = get_train_loader()
+#     val_loader = get_val_loader()
 
-    # Run the training and validation process
-    engine.run(state)
+#     # Create an instance of the Trainer class
+#     trainer = Trainer(model, optimizer, train_loader, val_loader, max_epochs=10)
+
+#     # Start training
+#     trainer.fit()
