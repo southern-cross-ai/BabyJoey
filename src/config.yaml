@@ -1,9 +1,9 @@
 model:
   vocab_size: 30000
   n_embd: 512
-  n_head: 8
+  n_head: 7
   n_layer: 6
-  n_layer_decoder: 1
+  n_layer_decoder: 11
   max_position_embeddings: 512
 
 data:
