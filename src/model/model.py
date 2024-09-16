@@ -27,18 +27,34 @@ class TransformerBlock(nn.Module):
         self.ln2 = nn.LayerNorm(n_embd)
 
     def forward(self, x, key_padding_mask=None):
+        ############# 1. Attention #############
+        # Keep the input for the later Attention Residual
+        x_copy = x.clone()
+        # 1.1 Layer Normalisation
+        x = self.ln1(x)
+        # 1.2 Self-Attention
+        # Reshape for Multi-Head Self-Attention: [batch_size, seq_len, n_embd] -> [seq_len, batch_size, n_embd]
         x = x.transpose(0, 1)
+        # Calculate the Attention Mask
         seq_len = x.size(0)
         attn_mask = torch.tril(torch.ones((seq_len, seq_len), device=x.device)).bool()
         # Use self.n_head here
         attn_mask = attn_mask.unsqueeze(0).expand(x.size(1) * self.n_head, -1, -1)
+        # Get the Attention Output
         attn_output, _ = self.attn(x, x, x, attn_mask=attn_mask, key_padding_mask=key_padding_mask)
-        x = x + attn_output
-        x = self.ln1(x)
-        x = x.transpose(0, 1)
-        mlp_output = self.mlp(x)
-        x = x + mlp_output
+        # Reshape to the shape of the input: [seq_len, batch_size, n_embd] -> [batch_size, seq_len, n_embd]
+        attn_output = attn_output.transpose(0, 1)
+        # 1.3 Attention Residual
+        x = x_copy + attn_output
+        ############# 2. MLP #############
+        # Keep the Attention Residual for the later MLP Residual
+        x_copy = x.clone()
+        # 2.1 Layer Normalisation
         x = self.ln2(x)
+        # 2.2 Two-Layer Fully Connected MLP
+        mlp_output = self.mlp(x)
+        # 2.3 MLP Residual
+        x = x_copy + mlp_output
         return x
 
 class BabyJoeyModel(nn.Module):  # Renamed from BabyJoey
