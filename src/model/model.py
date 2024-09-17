@@ -57,10 +57,10 @@ class TransformerBlock(nn.Module):
         x = x_copy + mlp_output
         return x
 
-class BabyJoeyModel(nn.Module):  # Renamed from BabyJoey
-    def __init__(self, vocab_size, n_embd, n_head, n_layer_decoder):
+class BabyJoeyModel(nn.Module):  
+    def __init__(self, vocab_size, n_embd, n_head, n_layer_decoder, sequence_length):
         super(BabyJoeyModel, self).__init__()
-        self.embeddings = Embeddings(vocab_size, n_embd, sequence_length=512)
+        self.embeddings = Embeddings(vocab_size, n_embd, sequence_length)
         self.decoder_blocks = nn.ModuleList([TransformerBlock(n_embd, n_head) for _ in range(n_layer_decoder)])
         self.ln_f = nn.LayerNorm(n_embd)
         self.head = nn.Linear(n_embd, vocab_size, bias=False)

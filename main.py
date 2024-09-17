@@ -18,7 +18,7 @@ def main():
 
     # Define device and initialize the model
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = BabyJoeyModel(VOCAB_SIZE, N_EMBD, N_HEAD, N_LAYER_DECODER).to(device)
+    model = BabyJoeyModel(VOCAB_SIZE, N_EMBD, N_HEAD, N_LAYER_DECODER, SEQUENCE_LENGTH).to(device)
     baby_joey_unit = BabyJoeyUnit(module=model, device=device)
 
     # Train the model using the defined AutoUnit and callback
