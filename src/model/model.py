@@ -38,8 +38,7 @@ class TransformerBlock(nn.Module):
         # Calculate the Attention Mask
         seq_len = x.size(0)
         attn_mask = torch.tril(torch.ones((seq_len, seq_len), device=x.device)).bool()
-        # Use self.n_head here
-        attn_mask = attn_mask.unsqueeze(0).expand(x.size(1) * self.n_head, -1, -1)
+
         # Get the Attention Output
         attn_output, _ = self.attn(x, x, x, attn_mask=attn_mask, key_padding_mask=key_padding_mask)
         # Reshape to the shape of the input: [seq_len, batch_size, n_embd] -> [batch_size, seq_len, n_embd]
