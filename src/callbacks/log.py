@@ -37,7 +37,12 @@ class Log(Callback):
         pass
     
     def on_eval_step_end(self, state, unit) -> None:
-        pass
+        if state.eval_state and state.eval_state.step_output:
+            eval_loss = state.eval_state.step_output[0].item()  # Ensure step_output is valid
+            # Print the evaluation step and the current loss
+            print(f"\rEval Batch {unit.eval_progress.num_steps_completed}: Eval Loss: {eval_loss:.6f}", end="")
+        else:
+            print(f"Eval Batch {unit.eval_progress.num_steps_completed}: No valid loss available at this step.")
     
     def on_eval_epoch_end(self, state, unit) -> None:
         print(f"Evaluation epoch {unit.eval_progress.num_epochs_completed} ended!")    
@@ -48,6 +53,7 @@ class Log(Callback):
     ######################## Exception Handling #########################
     def on_exception(self, state, unit, exc: BaseException) -> None:
         print(f"Exception occurred: {exc}")
+
 
 
 
