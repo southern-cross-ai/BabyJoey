@@ -28,11 +28,8 @@ def main():
     dataloader = BabyJoeyDataLoader(training_dataset, validation_dataset, BATCH_SIZE)
     training_dataloader, validation_dataloader = dataloader.get_dataloaders()
 
-    try:
-        total_training_batches = len(training_dataloader)
-        total_validation_batches = len(validation_dataloader)
-    except TypeError:
-        print("len() is not implemented for the DataLoader")
+    total_training_batches = len(training_dataloader)
+    total_validation_batches = len(validation_dataloader)
 
     print(f"Total number of training batches: {total_training_batches}")
     print(f"Total number of validation batches: {total_validation_batches}")
