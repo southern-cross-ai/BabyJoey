@@ -6,7 +6,8 @@ from src import (
     BabyJoeyDataLoader, 
     BabyJoeyModel, 
     BabyJoeyUnit,
-    TestingCallback
+    WandB,
+    Log
 )
 from src.config.config import (
     DATA, SEQUENCE_LENGTH, TRAIN_FILE, VALID_FILE, BATCH_SIZE, 
@@ -27,6 +28,15 @@ def main():
     dataloader = BabyJoeyDataLoader(training_dataset, validation_dataset, BATCH_SIZE)
     training_dataloader, validation_dataloader = dataloader.get_dataloaders()
 
+    try:
+        total_training_batches = len(training_dataloader)
+        total_validation_batches = len(validation_dataloader)
+    except TypeError:
+        print("len() is not implemented for the DataLoader")
+
+    print(f"Total number of training batches: {total_training_batches}")
+    print(f"Total number of validation batches: {total_validation_batches}")
+
     print("Getting Model")
 
     # Define device and initialize the model
@@ -42,7 +52,7 @@ def main():
         train_dataloader=training_dataloader,
         eval_dataloader=validation_dataloader,
         max_epochs=2,
-        callbacks=[TestingCallback()]
+        callbacks=[Log()]
     )
 
 if __name__ == "__main__":
