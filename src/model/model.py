@@ -27,7 +27,7 @@ class TransformerBlock(nn.Module):
         )
         self.ln2 = nn.LayerNorm(n_embd)
 
-    def forward(self, x, key_padding_mask=None):
+    def forward(self, x, attn_mask=None, key_padding_mask=None):
         ############# 1. Attention #############
         # Keep the input for the later Attention Residual
         x_copy = x
@@ -36,10 +36,6 @@ class TransformerBlock(nn.Module):
         # 1.2 Self-Attention
         # Reshape for Multi-Head Self-Attention: [batch_size, seq_len, n_embd] -> [seq_len, batch_size, n_embd]
         x = x.transpose(0, 1)
-        # Calculate the Attention Mask
-        seq_len = x.size(0)
-        attn_mask = torch.tril(torch.ones((seq_len, seq_len), device=x.device)).bool()
-
         # Get the Attention Output
         attn_output, _ = self.attn(x, x, x, attn_mask=attn_mask, key_padding_mask=key_padding_mask)
         # Reshape to the shape of the input: [seq_len, batch_size, n_embd] -> [batch_size, seq_len, n_embd]
@@ -48,7 +44,7 @@ class TransformerBlock(nn.Module):
         x = x_copy + attn_output
         ############# 2. MLP #############
         # Keep the Attention Residual for the later MLP Residual
-        x_copy = x
+        x_copy = x.clone()
         # 2.1 Layer Normalisation
         x = self.ln2(x)
         # 2.2 Two-Layer Fully Connected MLP
@@ -68,7 +64,7 @@ class BabyJoeyModel(nn.Module):
     def forward(self, x, attn_mask=None, key_padding_mask=None):
         x = self.embeddings(x)
         for block in self.decoder_blocks:
-            x = block(x, key_padding_mask=key_padding_mask)
+            x = block(x, attn_mask=attn_mask, key_padding_mask=key_padding_mask)
         x = self.ln_f(x)
         logits = self.head(x)
         return logits
