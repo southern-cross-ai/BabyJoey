@@ -29,7 +29,7 @@ class TransformerBlock(nn.Module):
     def forward(self, x, key_padding_mask=None):
         ############# 1. Attention #############
         # Keep the input for the later Attention Residual
-        x_copy = x.clone()
+        x_copy = x
         # 1.1 Layer Normalisation
         x = self.ln1(x)
         # 1.2 Self-Attention
