@@ -18,6 +18,7 @@ class TransformerBlock(nn.Module):
         super(TransformerBlock, self).__init__()
         self.n_head = n_head  # Store n_head as an instance variable
         self.attn = nn.MultiheadAttention(n_embd, self.n_head)
+        
         self.ln1 = nn.LayerNorm(n_embd)
         self.mlp = nn.Sequential(
             nn.Linear(n_embd, 4 * n_embd),
@@ -47,7 +48,7 @@ class TransformerBlock(nn.Module):
         x = x_copy + attn_output
         ############# 2. MLP #############
         # Keep the Attention Residual for the later MLP Residual
-        x_copy = x.clone()
+        x_copy = x
         # 2.1 Layer Normalisation
         x = self.ln2(x)
         # 2.2 Two-Layer Fully Connected MLP
