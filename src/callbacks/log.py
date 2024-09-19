@@ -55,10 +55,6 @@ class Log(Callback):
         print(f"Exception occurred: {exc}")
 
 
-
-
-
-
 # ------------- TODO Items for BabyJoey -------------:
 # Training Loss: wandb.log({"train_loss": loss})
 # Validation Loss: wandb.log({"val_loss": val_loss})

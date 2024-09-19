@@ -41,6 +41,11 @@ def main():
     model = BabyJoeyModel(VOCAB_SIZE, N_EMBD, N_HEAD, N_LAYER_DECODER, SEQUENCE_LENGTH).to(device)
     baby_joey_unit = BabyJoeyUnit(module=model, device=device)
 
+    def count_parameters(model):
+        return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+    print(f"Number of trainable parameters: {count_parameters(model)}")
+
     print("Starting training")
 
     # Train the model using the defined AutoUnit and callback
