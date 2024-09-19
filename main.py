@@ -1,6 +1,10 @@
 print('Getting imports')
 
 import torch
+import torch
+from torch.utils.data import Subset
+import random
+import itertools
 from src import (
     BabyJoeyDataset,
     BabyJoeyDataLoader, 
@@ -23,6 +27,18 @@ def main():
     # Load datasets
     dataset = BabyJoeyDataset(DATA, SEQUENCE_LENGTH, TRAIN_FILE, VALID_FILE)
     training_dataset, validation_dataset = dataset.load_or_create_datasets()
+
+################################################################################
+    # # Uncomment to Reduce the datasets to 1/16 of their original size
+    # def reduce_dataset(dataset, fraction):
+    #     dataset_size = len(dataset)
+    #     reduced_size = int(dataset_size * fraction)
+    #     indices = random.sample(range(dataset_size), reduced_size)
+    #     return Subset(dataset, indices)
+
+    # training_dataset = reduce_dataset(training_dataset, 1/256)
+    # validation_dataset = reduce_dataset(validation_dataset, 1/265)
+################################################################################
 
     # Create DataLoaders
     dataloader = BabyJoeyDataLoader(training_dataset, validation_dataset, BATCH_SIZE)
@@ -53,7 +69,7 @@ def main():
         baby_joey_unit,
         train_dataloader=training_dataloader,
         eval_dataloader=validation_dataloader,
-        max_epochs=2,
+        max_epochs=5,
         callbacks=[Log()]
     )
 
