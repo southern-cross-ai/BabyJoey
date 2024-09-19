@@ -1,6 +1,10 @@
 print('Getting imports')
 
 import torch
+import torch
+from torch.utils.data import Subset
+import random
+import itertools
 from src import (
     BabyJoeyDataset,
     BabyJoeyDataLoader, 
@@ -24,6 +28,16 @@ def main():
     dataset = BabyJoeyDataset(DATA, SEQUENCE_LENGTH, TRAIN_FILE, VALID_FILE)
     training_dataset, validation_dataset = dataset.load_or_create_datasets()
 
+    # # Reduce the datasets to 1/16 of their original size
+    # def reduce_dataset(dataset, fraction):
+    #     dataset_size = len(dataset)
+    #     reduced_size = int(dataset_size * fraction)
+    #     indices = random.sample(range(dataset_size), reduced_size)
+    #     return Subset(dataset, indices)
+
+    # training_dataset = reduce_dataset(training_dataset, 1/256)
+    # validation_dataset = reduce_dataset(validation_dataset, 1/265)
+
     # Create DataLoaders
     dataloader = BabyJoeyDataLoader(training_dataset, validation_dataset, BATCH_SIZE)
     training_dataloader, validation_dataloader = dataloader.get_dataloaders()
@@ -44,14 +58,12 @@ def main():
     model = BabyJoeyModel(VOCAB_SIZE, N_EMBD, N_HEAD, N_LAYER_DECODER, SEQUENCE_LENGTH).to(device)
     baby_joey_unit = BabyJoeyUnit(module=model, device=device)
 
-    print("Starting training")
-
     # Train the model using the defined AutoUnit and callback
     fit(
         baby_joey_unit,
         train_dataloader=training_dataloader,
         eval_dataloader=validation_dataloader,
-        max_epochs=2,
+        max_epochs=30,
         callbacks=[Log()]
     )
 
