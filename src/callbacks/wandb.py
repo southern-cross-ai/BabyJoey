@@ -33,10 +33,20 @@ class WandB(Callback):
         print(f"Evaluation epoch {unit.eval_progress.num_epochs_completed} started!")
     
     def on_eval_step_start(self, state, unit) -> None:
-        pass
-    
+        # Log the start of an evaluation step
+        print(f"Evaluation batch {unit.eval_progress.num_steps_completed} started.")
+
     def on_eval_step_end(self, state, unit) -> None:
-        pass
+        # Log evaluation loss at the end of the step if available
+        if state.eval_state and state.eval_state.step_output:
+            val_loss = state.eval_state.step_output[0].item()  # Ensure step_output is valid
+            print(f"Evaluation Loss: {val_loss:.6f}")
+        
+            # Log validation loss to wandb
+            wandb.log({"val_loss": val_loss})
+        else:
+            print("No valid evaluation loss available for this step.")
+
     
     def on_eval_epoch_end(self, state, unit) -> None:
         print(f"Evaluation epoch {unit.eval_progress.num_epochs_completed} ended!")    
