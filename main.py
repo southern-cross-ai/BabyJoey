@@ -1,6 +1,6 @@
 print('Getting imports')
 
-import torch
+
 import torch
 from torch.utils.data import Subset
 import random
