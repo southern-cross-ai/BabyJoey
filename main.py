@@ -57,7 +57,7 @@ def main():
     model = BabyJoeyModel(VOCAB_SIZE, N_EMBD, N_HEAD, N_LAYER_DECODER, SEQUENCE_LENGTH).to(device)
     baby_joey_unit = BabyJoeyUnit(module=model, device=device)
 
-    def count_parameters(model):
+    def count_parameters(model):  # TODO: Move this function to utils
         return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
     print(f"Number of trainable parameters: {count_parameters(model)}")
@@ -69,7 +69,7 @@ def main():
         baby_joey_unit,
         train_dataloader=training_dataloader,
         eval_dataloader=validation_dataloader,
-        max_epochs=10,
+        max_epochs=10,  # TODO: Load from config.py
         callbacks=[Log()]
     )
 
