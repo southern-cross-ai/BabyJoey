@@ -85,7 +85,7 @@ class TransformerBlock(nn.Module):
         x = x_copy + attn_output
 
         ############# 2. MLP #############
-        x_copy = x.clone()  # Clone for residual connection
+        x_copy = x.clone()  # Clone for residual connection TODO: Is clone necessary?
         x = self.ln2(x)  # Layer normalization, shape remains (batch_size, seq_len, n_embd)
         # MLP output shape: (batch_size, seq_len, n_embd)
         mlp_output = self.mlp(x)
@@ -117,7 +117,7 @@ class BabyJoeyModel(nn.Module):
         # Linear layer to project the output to vocabulary size: output shape (batch_size, seq_len, vocab_size)
         self.head = nn.Linear(n_embd, vocab_size, bias=False)
 
-    def forward(self, x, attn_mask=None, key_padding_mask=None):
+    def forward(self, x, attn_mask=None, key_padding_mask=None) -> torch.Tensor:
         """
         Forward pass through the BabyJoey model.
 
@@ -127,7 +127,7 @@ class BabyJoeyModel(nn.Module):
             key_padding_mask (Tensor, optional): Mask to avoid attention to padding tokens.
 
         Returns:
-            Tensor: Logits over the vocabulary, shape (batch_size, seq_len, vocab_size).
+            torch.Tensor: Logits over the vocabulary, shape (batch_size, seq_len, vocab_size).
         """
         # Embedding output shape: (batch_size, seq_len, n_embd)
         x = self.embeddings(x)
