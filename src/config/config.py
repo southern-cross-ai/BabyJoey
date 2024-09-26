@@ -11,16 +11,6 @@ TRAIN_FILE = 'training_dataset.pt'
 # path to load/store tokenised validation set for BabyJoeyDataset (data/dataset.py)
 VALID_FILE = 'validation_dataset.pt'
 
-##########################################################
-#                   Hugging Face Setup                   #
-##########################################################
-
-# dataset from Hugging Face for BabyJoeyDataset (data/dataset.py)
-DATA = "SouthernCrossAI/Tweets_cricket"
-# path to load/store tokenised training set for BabyJoeyDataset (data/dataset.py)
-TRAIN_FILE = 'training_dataset.pt'
-# path to load/store tokenised validation set for BabyJoeyDataset (data/dataset.py)
-VALID_FILE = 'validation_dataset.pt'
 
 ##########################################################
 #                    Dataset Settings                    #

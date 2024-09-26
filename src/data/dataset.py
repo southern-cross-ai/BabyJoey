@@ -19,6 +19,7 @@ class BabyJoeyDataset:
 
         Args:
             data_path (str): Dataset in Hugging Face (e.g., "SouthernCrossAI/Project_Gutenberg_Australia")
+            column_name (str): Column name that contains the text in the dataset.
             sequence_length (int): Maximum sequence length for input sequences
             train_file (str): File path for training set
             valid_file (str): File path for validation set
