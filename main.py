@@ -3,7 +3,7 @@ print('Getting imports')
 from src.config.config import (  # load user-specified hyperparams from config.py
     TRAIN_FILE, VALID_FILE, DATA, BATCH_SIZE,                      # dataset settings
     VOCAB_SIZE, SEQUENCE_LENGTH, N_EMBD, N_HEAD, N_LAYER_DECODER,  # model configs
-    # LEARNING_RATE, WEIGHT_DECAY, STEP_SIZE, GAMMA,               # SGD hyperparams
+    LEARNING_RATE, WEIGHT_DECAY, STEP_SIZE, GAMMA,                 # SGD hyperparams
 )
 from src import (        # load functional classes from submodules under src
     BabyJoeyDataLoader,  # dataloader.py - return dataloaders for training and validation
@@ -45,7 +45,14 @@ def main():
     print(f"Number of trainable parameters: {count_parameters(model)}")
     
     # Prepare AutoUnit
-    baby_joey_unit = BabyJoeyUnit(module=model, device=device)  # training AutoUnit # TODO: Add rank for DDP
+    baby_joey_unit = BabyJoeyUnit(module=model, device=device, 
+                                  lr=LEARNING_RATE,           # default 1e-5
+                                  weight_decay=WEIGHT_DECAY,  # default 1e-3
+                                  step_size=STEP_SIZE,        # default 1
+                                  gamma=GAMMA,                # default 0.9
+                                  # TODO: Add rank for DDP
+                                  )                 
+    
 
     # Train and evaluate the model using the defined AutoUnit and callback
     print("Starting training")

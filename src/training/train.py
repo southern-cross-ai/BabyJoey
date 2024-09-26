@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple, TypeVar, Union
 
 import torch
 import torch.distributed as dist
@@ -9,18 +9,55 @@ from torchtnt.framework.auto_unit import AutoUnit
 from torchtnt.framework.state import State
 from torchtnt.utils import TLRScheduler
 
+TData = TypeVar("TData")
+
 
 class BabyJoeyUnit(AutoUnit):
-    def __init__(self, module, device=None, rank=None):
-        super().__init__(module=module, device=device)
-        self.loss_fn = nn.CrossEntropyLoss()
+    def __init__(self,
+                 module: nn.Module,
+                 device: Optional[torch.device] = None,
+                 lr: float = 1e-5,
+                 weight_decay: float = 1e-3,
+                 step_size: int = 1,
+                 gamma: float = 0.9,
+                 devices_ids: Union[List[torch.device], List[int]] = None,  # DDP
+                 output_device: Union[torch.device, int] = None,            # DDP
+                 rank: int = None                                           # DDP
+                 ) -> None:                                 
+        """Customised AutoUnit class for BabyJoey
 
+        Args:
+            module (nn.Module): BabyJoey model
+            device (Optional[torch.device], optional): the device to be used. Defaults to None.
+            devices_ids (Union[List[torch.device]  |  List[int]], optional): DDP devices to be used. Defaults to None.
+            lr (float, optional): learning rate for the optimizer. Defaults to 1e-5.
+            weight_decay (float, optional): weight decay for the optimizer. Defaults to 1e-3.
+            step_size (int, optional): step size for the learning rate scheduler. Defaults to 1.
+            gamma (float, optional): gamma for the learning rate scheduler. Defaults to 0.9.
+        """
+
+        self.lr = lr
+        self.weight_decay = weight_decay
+        self.step_size = step_size
+        self.gamma = gamma
+        self.loss_fn = nn.CrossEntropyLoss()  # TODO: Allow user to specify loss function?
+        
         # Check if distributed training is enabled and wrap the module with DDP
         if torch.distributed.is_initialized():
-            self.module = DDP(module, device_ids=[device], output_device=device)
-            print(f"Module wrapped with DDP on device {device} for rank {rank}")
+            self.device_ids = devices_ids
+            self.output_device = output_device
+            self.rank = rank
+            self.module = DDP(module, device_ids=self.device_ids, output_device=self.output_device)
+            # TODO: check other params when initialising the AutoUnit class
+            print(f"Module wrapped with DDP on devices {self.device_ids} for rank {self.rank}."\
+                   "Output device is {self.output_device}.")
+            # super().__init__(module=self.module, device=self.device)  # TODO: how to super a DDP?
+        else:  # No DDP
+            self.device = device
+            self.module = module
+            super().__init__(module=self.module, device=self.device)
 
-    def compute_loss(self, state: State, data) -> Tuple[torch.Tensor, torch.Tensor]:
+    def compute_loss(self, state: State, data: TData) -> Tuple[torch.Tensor, torch.Tensor]:
         """Implement this with loss computation. This will be called every train_step/eval_step.
 
         Args:
@@ -38,7 +75,7 @@ class BabyJoeyUnit(AutoUnit):
         loss = self.loss_fn(logits.view(-1, logits.size(-1)), targets.view(-1))
         return loss, logits
 
-    def configure_optimizers_and_lr_scheduler(self, module: torch.nn.Module) -> Tuple[torch.optim.Optimizer, Optional[TLRScheduler]]:
+    def configure_optimizers_and_lr_scheduler(self, module: nn.Module) -> Tuple[torch.optim.Optimizer, Optional[TLRScheduler]]:
         """Implement this with optimizer and learning rate scheduler construction code. This will be called upon initialization of the AutoUnit.
 
         Args:
@@ -47,6 +84,6 @@ class BabyJoeyUnit(AutoUnit):
         Returns:
             Tuple[torch.optim.Optimizer, Optional[TLRScheduler]]: A tuple containing optimizer and optionally the learning rate scheduler
         """
-        optimizer = optim.AdamW(module.parameters(), lr=1e-5, weight_decay=1e-3)
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.9)
+        optimizer = optim.AdamW(module.parameters(), lr=self.lr, weight_decay=self.weight_decay)
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=self.step_size, gamma=self.gamma)
         return optimizer, scheduler
