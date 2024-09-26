@@ -35,28 +35,27 @@ class BabyJoeyUnit(AutoUnit):
             step_size (int, optional): step size for the learning rate scheduler. Defaults to 1.
             gamma (float, optional): gamma for the learning rate scheduler. Defaults to 0.9.
         """
-
+        
+        super().__init__(module=module, device=device)
+        self.device = device
+        self.module = module
         self.lr = lr
-        self.weight_decay = weight_decay
+        self.weight_decay = weight_decaygi
         self.step_size = step_size
         self.gamma = gamma
         self.loss_fn = nn.CrossEntropyLoss()  # TODO: Allow user to specify loss function?
         
-        # Check if distributed training is enabled and wrap the module with DDP
-        if torch.distributed.is_initialized():
-            self.device_ids = devices_ids
-            self.output_device = output_device
-            self.rank = rank
-            self.module = DDP(module, device_ids=self.device_ids, output_device=self.output_device)
-            # TODO: check other params when initialising the AutoUnit class
-            print(f"Module wrapped with DDP on devices {self.device_ids} for rank {self.rank}."\
-                   "Output device is {self.output_device}.")
-            # super().__init__(module=self.module, device=self.device)  # TODO: how to super a DDP?
-        else:  # No DDP
-            self.device = device
-            self.module = module
-            super().__init__(module=self.module, device=self.device)
-
+        # # Check if distributed training is enabled and wrap the module with DDP
+        # if torch.distributed.is_initialized():
+        #     self.device_ids = devices_ids
+        #     self.output_device = output_device
+        #     self.rank = rank
+        #     self.module = DDP(module, device_ids=self.device_ids, output_device=self.output_device)
+        #     # TODO: check other params when initialising the AutoUnit class
+        #     print(f"Module wrapped with DDP on devices {self.device_ids} for rank {self.rank}."\
+        #            "Output device is {self.output_device}.")
+            
+            
     def compute_loss(self, state: State, data: TData) -> Tuple[torch.Tensor, torch.Tensor]:
         """Implement this with loss computation. This will be called every train_step/eval_step.
 
