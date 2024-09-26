@@ -38,7 +38,7 @@ class BabyJoeyDataset:
             _type_: Tokenised dataset  # TODO: Returned type?
         """
         return self.tokenizer(
-            dataset['Paragraph'], 
+            dataset['tweet'], 
             truncation=True, 
             padding='max_length', 
             max_length=self.sequence_length,
