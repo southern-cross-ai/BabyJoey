@@ -1,5 +1,7 @@
 print('Getting imports')
 
+# Make sure you install the required packages >>> pip install -r requirements.txt
+
 from src.config.config import (  # load user-specified hyperparams from config.py
     TRAIN_FILE, VALID_FILE, DATA, BATCH_SIZE,                      # dataset settings
     VOCAB_SIZE, SEQUENCE_LENGTH, N_EMBD, N_HEAD, N_LAYER_DECODER,  # model configs
