@@ -7,11 +7,13 @@ from datasets import (  # load datasets from Hugging Face
     DatasetDict,
     load_dataset,
 )
-from transformers import GPT2Tokenizer  # load pre-trained GPT2 tokenizer
+
+# load pre-trained GPT2 tokenizer
+from transformers import BatchEncoding, GPT2Tokenizer
 
 
 class BabyJoeyDataset:
-    def __init__(self, data_path: str, sequence_length: int, train_file: str, valid_file: str) -> None:
+    def __init__(self, data_path: str, sequence_length: int, train_file: str, valid_file: str, split_ratio: float = 0.2) -> None:
         """Initialise a dataset class for BabyJoey
 
         Args:
@@ -19,28 +21,33 @@ class BabyJoeyDataset:
             sequence_length (int): Maximum sequence length for input sequences
             train_file (str): File path for training set
             valid_file (str): File path for validation set
+            split_ratio (float, optional): Split ratio for validation set. Defaults to 0.2.
         """
         self.data_path = data_path
+        # TODO: move this attr to load_or_create_datasets or add new arg to tokenize_function
         self.sequence_length = sequence_length
         self.train_file = train_file
         self.valid_file = valid_file
         # TODO: Current tokeniser is hard-encoded. Should allow users to load their own tokenisers
         self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2', clean_up_tokenization_spaces=True)
         self.tokenizer.pad_token = self.tokenizer.eos_token
+        self.split_ratio = split_ratio
 
-    def tokenize_function(self, dataset: DatasetDict):
-        """Tokenise a dataset.
+    # TODO: name is redundant
+    def tokenize_function(self, dataset: DatasetDict) -> BatchEncoding:
+        """Tokenise a dataset. Truncate input sequence if it's longer than `sequence_length`.
 
         Args:
-            dataset (DatasetDict): Original dataset
+            dataset (DatasetDict): input dataset to tokenise
 
         Returns:
-            _type_: Tokenised dataset  # TODO: Returned type?
+            BatchEncoding: Tokenised dataset
         """
+
         return self.tokenizer(
-            dataset['tweet'], 
-            truncation=True, 
-            padding='max_length', 
+            dataset['tweet'],
+            truncation=True,
+            padding='max_length',
             max_length=self.sequence_length,
             return_attention_mask=True
         )
@@ -59,8 +66,7 @@ class BabyJoeyDataset:
         else:
             # Pull datasets from Hugging Face
             dataset = load_dataset(self.data_path)
-            # TODO: Hard-encoded split size. Should be configed in config.py
-            dataset = dataset['train'].train_test_split(test_size=0.2)
+            dataset = dataset['train'].train_test_split(test_size=self.split_ratio)
             # Tokenise the loaded datasets by a tokeniser
             training_dataset = dataset['train'].map(self.tokenize_function, batched=True)
             validation_dataset = dataset['test'].map(self.tokenize_function, batched=True)

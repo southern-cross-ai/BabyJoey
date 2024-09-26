@@ -3,7 +3,7 @@ print('Getting imports')
 # Make sure you install the required packages >>> pip install -r requirements.txt
 
 from src.config.config import (  # load user-specified hyperparams from config.py
-    TRAIN_FILE, VALID_FILE, DATA, BATCH_SIZE,                      # dataset settings
+    TRAIN_FILE, VALID_FILE, DATA, BATCH_SIZE, SPLIT_RATIO,         # dataset settings
     VOCAB_SIZE, SEQUENCE_LENGTH, N_EMBD, N_HEAD, N_LAYER_DECODER,  # model configs
     LEARNING_RATE, WEIGHT_DECAY, STEP_SIZE, GAMMA,                 # SGD hyperparams
 )
@@ -31,7 +31,8 @@ def main():
         data_path=DATA, 
         sequence_length=SEQUENCE_LENGTH, 
         train_file=TRAIN_FILE, 
-        valid_file=VALID_FILE)
+        valid_file=VALID_FILE,
+        split_ratio=SPLIT_RATIO)
     training_dataset, validation_dataset = dataset.load_or_create_datasets()
 
     # Prepare DataLoaders
