@@ -11,7 +11,8 @@ from transformers import GPT2Tokenizer  # load pre-trained GPT2 tokenizer
 
 
 class BabyJoeyDataset:
-    def __init__(self, data_path: str, sequence_length: int, train_file: str, valid_file: str) -> None:
+    def __init__(self, data_path: str, column_name: str, train_file: str, valid_file: str, 
+                 split_ratio: float = 0.2, sequence_length: int = 128) -> None:
         """Initialise a dataset class for BabyJoey
 
         Args:
@@ -27,6 +28,8 @@ class BabyJoeyDataset:
         # TODO: Current tokeniser is hard-encoded. Should allow users to load their own tokenisers
         self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2', clean_up_tokenization_spaces=True)
         self.tokenizer.pad_token = self.tokenizer.eos_token
+        self.split_ratio = split_ratio
+        self.column_name = column_name
 
     def tokenize_function(self, dataset: DatasetDict):
         """Tokenise a dataset.
@@ -38,9 +41,9 @@ class BabyJoeyDataset:
             _type_: Tokenised dataset  # TODO: Returned type?
         """
         return self.tokenizer(
-            dataset['tweet'], 
-            truncation=True, 
-            padding='max_length', 
+            dataset[self.column_name],
+            truncation=True,
+            padding='max_length',
             max_length=self.sequence_length,
             return_attention_mask=True
         )

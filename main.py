@@ -29,6 +29,7 @@ def main():
     # Load datasets
     dataset = BabyJoeyDataset(
         data_path=DATA, 
+        column_name=COLUM_NAME,
         sequence_length=SEQUENCE_LENGTH, 
         train_file=TRAIN_FILE, 
         valid_file=VALID_FILE)
