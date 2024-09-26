@@ -65,7 +65,7 @@ def main():
         baby_joey_unit,  # training AutoUnit in train.py
         train_dataloader=training_dataloader,
         eval_dataloader=validation_dataloader,
-        max_epochs=10,  # TODO: Load from config.py
+        max_epochs=2,  # TODO: Load from config.py
         callbacks=[Log()]
     )
 
