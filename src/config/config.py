@@ -8,8 +8,8 @@ BATCH_SIZE = 32  # batch size for BabyJoeyDataLoader in dataloader.py
 VOCAB_SIZE = 50257      # Unique Tokens
 SEQUENCE_LENGTH = 512   # Sequence Length (T)
 N_EMBD = 512            # Hidden Size (C)
-N_HEAD = 16             # Attention Heads
-N_LAYER_DECODER = 24    # Decoder Layers
+N_HEAD = 8              # Attention Heads
+N_LAYER_DECODER = 1     # Decoder Layers
 # TODO: current Feed-Forward Network Size is hard-encoded as 4 * N_EMBD in model.py
 
 # SGD Optimiser Hyperparameters
