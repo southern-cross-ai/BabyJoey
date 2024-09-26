@@ -40,7 +40,7 @@ class BabyJoeyUnit(AutoUnit):
         self.device = device
         self.module = module
         self.lr = lr
-        self.weight_decay = weight_decaygi
+        self.weight_decay = weight_decay
         self.step_size = step_size
         self.gamma = gamma
         self.loss_fn = nn.CrossEntropyLoss()  # TODO: Allow user to specify loss function?
