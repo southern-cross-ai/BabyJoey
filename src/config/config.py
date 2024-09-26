@@ -2,7 +2,7 @@
 TRAIN_FILE = 'training_dataset.pt'    # file path for training set
 VALID_FILE = 'validation_dataset.pt'  # file path for validation set
 DATA = "SouthernCrossAI/Tweets_cricket"  # format: hf_namespace/dataset_name
-BATCH_SIZE = 32  # batch size for BabyJoeyDataLoader in dataloader.py
+BATCH_SIZE = 2  # batch size for BabyJoeyDataLoader in dataloader.py
 
 # Model Configurations
 VOCAB_SIZE = 50257      # Unique Tokens
