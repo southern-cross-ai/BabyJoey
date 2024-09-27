@@ -1,21 +1,26 @@
-print('Getting imports')
-
 # Make sure you install the required packages >>> pip install -r requirements.txt
 
-from src.config.config import (  # load user-specified hyperparams from config.py
-    TRAIN_FILE, VALID_FILE, DATA, COLUMN_NAME,                      # huffing face info
-    BATCH_SIZE, SPLIT_RATIO,                                       # dataset settings
-    VOCAB_SIZE, SEQUENCE_LENGTH, N_EMBD, N_HEAD, N_LAYER_DECODER,  # model configs
-    LEARNING_RATE, WEIGHT_DECAY, STEP_SIZE, GAMMA,                 # SGD hyperparams
+# load hyperparameters defined in config/config.py
+print("Loading configurations from `config.py`...")
+from src.config.config import (
+    DATA, COLUMN_NAME,                                             # Hugging Face Setup
+    TRAIN_FILE, VALID_FILE, SPLIT_RATIO,                           # Local Dataset Setup
+    BATCH_SIZE,                                                    # Dataloader Setup
+    VOCAB_SIZE, SEQUENCE_LENGTH, N_EMBD, N_HEAD, N_LAYER_DECODER,  # Model Structure
+    LEARNING_RATE, WEIGHT_DECAY, STEP_SIZE, GAMMA,                 # Optimisation Hyperparameters
 )
-from src import (        # load functional classes from submodules under src
-    BabyJoeyDataLoader,  # dataloader.py - return dataloaders for training and validation
-    BabyJoeyDataset,     # dataset.py - load dataset configured by DATA from Hugging Face
-    BabyJoeyModel,       # model.py - nn.Module subclass, contains definitions of Embeddings and TransformerBlock
-    BabyJoeyUnit,        # train.py - AutoUnit subclass
-    Log,                 # log.py - Callback subclass
-    WandB,               # wandb.py - Callback subclass
+# load functional classes from submodules under src
+print("Loading functional classes under `src`...")
+from src import (
+    BabyJoeyDataLoader,  # data/dataloader.py - dataloaders for training and validation sets
+    BabyJoeyDataset,     # data/dataset.py - datasets for training and validation
+    BabyJoeyModel,       # model/model.py - definitions of model structure
+    BabyJoeyUnit,        # training/train.py - logic of training and validation
+    Log,                 # logs/log.py - logging functions
+    WandB,               # TODO: finish wandb callback
 )
+# TODO: load all utility functions following the last format
+print("Loading utility functions under `src`...")
 from src.utils.count_param import count_parameters  # utils.py - count model parameters
 
 import torch
