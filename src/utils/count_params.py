@@ -1,7 +1,7 @@
 from torch import nn
 
 
-def count_parameters(model: nn.Module) -> int:  # TODO: Moved from main.py
+def count_params(model: nn.Module) -> int:
     """Count the total number of model parameters.
 
     Args:

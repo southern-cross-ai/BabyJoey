@@ -10,7 +10,7 @@ from src.config.config import (
     LEARNING_RATE, WEIGHT_DECAY, STEP_SIZE, GAMMA,                 # Optimisation Hyperparameters
 )
 # load functional classes from submodules under src
-print("Loading functional classes under `src`...")
+print("Loading core functional classes under `src`...")
 from src import (
     BabyJoeyDataLoader,  # data/dataloader.py - dataloaders for training and validation sets
     BabyJoeyDataset,     # data/dataset.py - datasets for training and validation
@@ -19,18 +19,19 @@ from src import (
     Log,                 # logs/log.py - logging functions
     WandB,               # TODO: finish wandb callback
 )
-# TODO: load all utility functions following the last format
-print("Loading utility functions under `src`...")
-from src.utils.count_param import count_parameters  # utils.py - count model parameters
+# TODO: Is there a better design to manage util functions? Will src/__init.__py cause problems?
+print("Loading other utility classes under `src`...")
+from src import (
+    BabyJoeyUtil         # util/utils.py
+)
 
 import torch
 from torch.utils.data import Subset
 from torchtnt.framework.fit import fit
 
 
-print('Starting Main()')
-
 def main():
+    
     print('Getting data...')
     # Load datasets
     dataset = BabyJoeyDataset(
@@ -52,7 +53,7 @@ def main():
     print("Getting Model")
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # TODO: Load device from config.py?
     model = BabyJoeyModel(VOCAB_SIZE, N_EMBD, N_HEAD, N_LAYER_DECODER, SEQUENCE_LENGTH).to(device)
-    print(f"Number of trainable parameters: {count_parameters(model)}")
+    print(f"Number of trainable parameters: {BabyJoeyUtil.count_params(model)}")
     
     # Prepare AutoUnit
     baby_joey_unit = BabyJoeyUnit(module=model, device=device, 
