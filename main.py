@@ -31,9 +31,8 @@ from torchtnt.framework.fit import fit
 
 
 def main():
-    
-    print('Getting data...')
-    # Load datasets
+    # download/save datasets if not existed, otherwise load tokenised datasets
+    print("Preparing training and validation datasets...")
     dataset = BabyJoeyDataset(
         data_path=DATA, 
         column_name=COLUMN_NAME,
@@ -42,31 +41,41 @@ def main():
         valid_file=VALID_FILE,
         split_ratio=SPLIT_RATIO)
     training_dataset, validation_dataset = dataset.load_or_create_datasets()
+    print("Created training and validation datasets")
 
-    # Prepare DataLoaders
+    # prepare dataloaders given predefined batch size
+    print("Preparing training and validation dataloaders...")
     dataloader = BabyJoeyDataLoader(training_dataset, validation_dataset, BATCH_SIZE)
     training_dataloader, validation_dataloader = dataloader.get_dataloaders()
-    print(f"Total number of training batches: {len(training_dataloader)}")
-    print(f"Total number of validation batches: {len(validation_dataloader)}")
+    print(f"Training dataloader has {len(training_dataloader)} batches, "\
+          f"validation dataloader has {len(validation_dataloader)} batches")
 
-    # Prepare BabyJoey
-    print("Getting Model")
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # TODO: Load device from config.py?
+    # initialise a model based on predefined model structure
+    print("Building a model...")
+    # TODO: Load device config from config.py? When to explicitly specify device?
+    # TODO: Support more devices later https://pytorch.org/docs/stable/distributed.html
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = BabyJoeyModel(VOCAB_SIZE, N_EMBD, N_HEAD, N_LAYER_DECODER, SEQUENCE_LENGTH).to(device)
-    print(f"Number of trainable parameters: {BabyJoeyUtil.count_params(model)}")
+    n_params = BabyJoeyUtil.count_params(model)
+    print(f"Initialised a model on {device} with {n_params} trainable parameters")
     
-    # Prepare AutoUnit
-    baby_joey_unit = BabyJoeyUnit(module=model, device=device, 
-                                  lr=LEARNING_RATE,           # default 1e-5
-                                  weight_decay=WEIGHT_DECAY,  # default 1e-3
-                                  step_size=STEP_SIZE,        # default 1
-                                  gamma=GAMMA,                # default 0.9
-                                  # TODO: Add rank for DDP
-                                  )                 
-    
+    # TODO: Add comments for AutoUnit
+    # prepare AutoUnit
+    print("Preparing for training/evaluation/prediction logic...")
+    baby_joey_unit = BabyJoeyUnit(
+        module=model, 
+        device=device, 
+        lr=LEARNING_RATE,           # default 1e-5
+        weight_decay=WEIGHT_DECAY,  # default 1e-3
+        step_size=STEP_SIZE,        # default 1
+        gamma=GAMMA                 # default 0.9
+        # TODO: Add rank arguments for DDP
+        )
+    # TODO: Based on which functions are implemented, provide more info on what logic will be executed.
+    print("Created training/evaluation/prediction logic")
 
-    # Train and evaluate the model using the defined AutoUnit and callback
-    print("Starting training")
+    # Train and evaluate the model using the defined AutoUnit and Callbacks
+    print("Executing training/evaluation/prediction process...")
     fit(
         baby_joey_unit,  # training AutoUnit in train.py
         train_dataloader=training_dataloader,
@@ -74,6 +83,7 @@ def main():
         max_epochs=2,  # TODO: Load from config.py
         callbacks=[Log()]
     )
+    print("Finished training/evaluation/prediction process")
 
 
 if __name__ == "__main__":
