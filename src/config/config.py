@@ -18,7 +18,7 @@ COLUMN_NAME = 'tweet'
 TRAIN_FILE = f'{DATA.split('/')[-1]}_train.pt'
 # local path to load/store tokenised validation set, default to 'dataset_name_valid.py'
 VALID_FILE = f'{DATA.split('/')[-1]}_valid.pt'
-# split ratio for validation set for BabyJoeyDataset (data/dataset.py)
+# split ratio for validation set
 SPLIT_RATIO = 0.2
 
 
@@ -57,7 +57,7 @@ N_LAYER_DECODER = 1
 
 # learning rate for AdamW optimizer # TODO: can users change to different optimisers?
 LEARNING_RATE = 1e-5
-# weight decay for AdamW optimizer (training/train.py)
+# weight decay for AdamW optimizer
 WEIGHT_DECAY = 1e-3
 # period of learning rate decay for StepLR scheduler # TODO: can users change to different schedulers?
 STEP_SIZE = 1
