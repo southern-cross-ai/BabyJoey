@@ -2,14 +2,14 @@
 #                   Hugging Face Setup                   #
 ##########################################################
 
-# dataset from Hugging Face for BabyJoeyDataset (data/dataset.py)
-DATA = "SouthernCrossAI/Tweets_cricket"
-# column name from the dataset used as input for BabyJoeyDataset (data/dataset.py)
-COLUMN_NAME = 'tweet'
-# path to load/store tokenised training set for BabyJoeyDataset (data/dataset.py)
-TRAIN_FILE = 'training_dataset.pt'
-# path to load/store tokenised validation set for BabyJoeyDataset (data/dataset.py)
-VALID_FILE = 'validation_dataset.pt'
+# dataset from Hugging Face (data/dataset/BabyJoeyDataset)
+DATA = 'SouthernCrossAI/Tweets_cricket'         # hf_domain/dataset_name, e.g. 'SouthernCrossAI/Tweets_cricket'
+# column of dataset that contains text (data/dataset/BabyJoeyDataset)
+COLUMN_NAME = 'tweet'                           # check on Hugging Face whether column is correct
+# path to load/store tokenised training set (data/dataset/BabyJoeyDataset)
+TRAIN_FILE = f'{DATA.split('/')[-1]}_train.pt'  # create 'Tweets_cricket_train.pt' under root
+# path to load/store tokenised validation set (data/dataset/BabyJoeyDataset)
+VALID_FILE = f'{DATA.split('/')[-1]}_valid.pt'  # create 'Tweets_cricket_valid.pt' under root
 
 
 ##########################################################
