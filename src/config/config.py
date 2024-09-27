@@ -1,62 +1,73 @@
-##########################################################
+#--------------------------------------------------------#
 #                   Hugging Face Setup                   #
-##########################################################
+#            BabyJoeyDataset - data/dataset.py           #
+#--------------------------------------------------------#
 
-# dataset from Hugging Face (data/dataset/BabyJoeyDataset)
-DATA = 'SouthernCrossAI/Tweets_cricket'         # hf_domain/dataset_name, e.g. 'SouthernCrossAI/Tweets_cricket'
-# column of dataset that contains text (data/dataset/BabyJoeyDataset)
-COLUMN_NAME = 'tweet'                           # check on Hugging Face whether column is correct
-# path to load/store tokenised training set (data/dataset/BabyJoeyDataset)
-TRAIN_FILE = f'{DATA.split('/')[-1]}_train.pt'  # create 'Tweets_cricket_train.pt' under root
-# path to load/store tokenised validation set (data/dataset/BabyJoeyDataset)
-VALID_FILE = f'{DATA.split('/')[-1]}_valid.pt'  # create 'Tweets_cricket_valid.pt' under root
+# dataset from Hugging Face Hub in format 'username/dataset_name'
+DATA = 'SouthernCrossAI/Tweets_cricket'
+# dataset column that contains text to use, check on Hugging Face to find column name
+COLUMN_NAME = 'tweet'
 
 
-##########################################################
-#                    Dataset Settings                    #
-##########################################################
+#--------------------------------------------------------#
+#                   Local Dataset Setup                  #
+#            BabyJoeyDataset - data/dataset.py           #
+#--------------------------------------------------------#
 
-# batch size for BabyJoeyDataLoader (data/dataloader.py)
-BATCH_SIZE = 2
+# local path to load/store tokenised training set, default to 'dataset_name_train.py'
+TRAIN_FILE = f'{DATA.split('/')[-1]}_train.pt'
+# local path to load/store tokenised validation set, default to 'dataset_name_valid.py'
+VALID_FILE = f'{DATA.split('/')[-1]}_valid.pt'
 # split ratio for validation set for BabyJoeyDataset (data/dataset.py)
 SPLIT_RATIO = 0.2
 
 
-##########################################################
-#                   BabyJoey Structure                   #
-##########################################################
+#--------------------------------------------------------#
+#                    Dataloader Setup                    #
+#         BabyJoeyDataLoader - data/dataloader.py        #
+#--------------------------------------------------------#
 
-# number of unique tokens for BabyJoeyModel (model/model.py)
+# batch size for both training and validation
+BATCH_SIZE = 2
+
+
+#--------------------------------------------------------#
+#                    Model Structure                     #
+#            BabyJoeyModel - model/model.py              #
+#--------------------------------------------------------#
+
+# total number of unique tokens
 VOCAB_SIZE = 50257
-# maximum number of tokens in one sequence for BabyJoeyModel (model/model.py), a.k.a. time steps (T)
+# maximum number of tokens in one sequence, or time steps (T)
 SEQUENCE_LENGTH = 512
-# dimensionality of embedding vectors for tokens for BabyJoeyModel (model/model.py), a.k.a. channel size (C) or hidden size
+# dimension of embedding vectors, or channel size (C)
 N_EMBD = 512
-# number of attention heads for BabyJoeyModel (model/model.py)
+# number of multi-head attentions in each decoder block
 N_HEAD = 8
-# number of decoder blocks for BabyJoeyModel (model/model.py)
+# total number of decoder blocks
 N_LAYER_DECODER = 1
 # hidden layer size for two-layer FC MLP # TODO: current hidden layer size is hard-coded as 4 * N_EMBD in model.py
 # N_HIDDEN_MLP = 4 * N_EMBD
 
 
-##########################################################
+#--------------------------------------------------------#
 #               Optimisation Hyperparameters             #
-##########################################################
+#            BabyJoeyUnit - training/train.py            #
+#--------------------------------------------------------#
 
-# learning rate of AdamW optimizer for BabyJoeyUnit (training/train.py) # TODO: can users change to different optimisers?
+# learning rate for AdamW optimizer # TODO: can users change to different optimisers?
 LEARNING_RATE = 1e-5
-# weight decay of AdamW optimizer for BabyJoeyUnit (training/train.py)
+# weight decay for AdamW optimizer (training/train.py)
 WEIGHT_DECAY = 1e-3
-# period of learning rate decay of StepLR scheduler for BabyJoeyUnit (training/train.py) # TODO: can users change to different schedulers?
+# period of learning rate decay for StepLR scheduler # TODO: can users change to different schedulers?
 STEP_SIZE = 1
-# multiplicative factor of learning rate decay of StepLR scheduler for BabyJoeyUnit (training/train.py)
+# multiplicative factor of learning rate decay for StepLR scheduler
 GAMMA = 0.9
 
 
-##########################################################
+#--------------------------------------------------------#
 #                   GPT-2 References                     #
-##########################################################
+#--------------------------------------------------------#
 
 """
 GPT-2 Small
