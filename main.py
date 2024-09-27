@@ -3,7 +3,7 @@ print('Getting imports')
 # Make sure you install the required packages >>> pip install -r requirements.txt
 
 from src.config.config import (  # load user-specified hyperparams from config.py
-    TRAIN_FILE, VALID_FILE, DATA, COLUM_NAME,                      # huffing face info
+    TRAIN_FILE, VALID_FILE, DATA, COLUMN_NAME,                      # huffing face info
     BATCH_SIZE, SPLIT_RATIO,                                       # dataset settings
     VOCAB_SIZE, SEQUENCE_LENGTH, N_EMBD, N_HEAD, N_LAYER_DECODER,  # model configs
     LEARNING_RATE, WEIGHT_DECAY, STEP_SIZE, GAMMA,                 # SGD hyperparams
@@ -30,7 +30,7 @@ def main():
     # Load datasets
     dataset = BabyJoeyDataset(
         data_path=DATA, 
-        column_name=COLUM_NAME,
+        column_name=COLUMN_NAME,
         sequence_length=SEQUENCE_LENGTH, 
         train_file=TRAIN_FILE, 
         valid_file=VALID_FILE,

@@ -5,7 +5,7 @@
 # dataset from Hugging Face for BabyJoeyDataset (data/dataset.py)
 DATA = "SouthernCrossAI/Tweets_cricket"
 # column name from the dataset used as input for BabyJoeyDataset (data/dataset.py)
-COLUM_NAME = 'tweet'
+COLUMN_NAME = 'tweet'
 # path to load/store tokenised training set for BabyJoeyDataset (data/dataset.py)
 TRAIN_FILE = 'training_dataset.pt'
 # path to load/store tokenised validation set for BabyJoeyDataset (data/dataset.py)
