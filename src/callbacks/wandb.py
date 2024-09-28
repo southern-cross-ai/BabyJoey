@@ -9,7 +9,8 @@ class WandB(Callback):
         print(f"Training epoch {unit.train_progress.num_epochs_completed} started!")
 
     def on_train_step_start(self, state, unit) -> None:
-        pass
+        current_step = unit.train_progress.num_steps_completed
+        print(f"Training step {current_step} started.")
 
     def on_train_step_end(self, state, unit) -> None:
         if state.train_state and state.train_state.step_output:
