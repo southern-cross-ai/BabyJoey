@@ -18,7 +18,9 @@ COLUMN_NAME = 'tweet'
 TRAIN_FILE = f'{DATA.split('/')[-1]}_train.pt'
 # local path to load/store tokenised validation set, default to 'dataset_name_valid.py'
 VALID_FILE = f'{DATA.split('/')[-1]}_valid.pt'
-# split ratio for validation set
+# percentage of dataset out of whole dataset, set to 1 for using whole dataset
+SAMPLE_RATIO = 0.3
+# percentage of validation set out of (sampled) dataset, 1 - SPLIT_RATIO for training set
 SPLIT_RATIO = 0.2
 
 
