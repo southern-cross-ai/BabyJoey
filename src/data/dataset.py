@@ -2,28 +2,33 @@ import os
 from typing import Tuple
 
 import torch
-from datasets import (  # load datasets from Hugging Face
-    Dataset,
-    DatasetDict,
-    load_dataset,
-)
-
-# load pre-trained GPT2 tokenizer
+from datasets import Dataset, DatasetDict, load_dataset
 from transformers import BatchEncoding, GPT2Tokenizer
+
+from src import BabyJoeyUtil
 
 
 class BabyJoeyDataset:
-    def __init__(self, data_path: str, column_name: str, train_file: str, valid_file: str, 
-                 split_ratio: float = 0.2, sequence_length: int = 128) -> None:
-        """Initialise a dataset class for BabyJoey
+    def __init__(self, 
+                 data_path: str, 
+                 column_name: str, 
+                 train_file: str, 
+                 valid_file: str, 
+                 split_ratio: float = 0.2, 
+                 sample_ratio: float = 0.3, 
+                 sequence_length: int = 128
+                 ) -> None:
+        r"""Initialise a dataset class for BabyJoey.
 
         Args:
-            data_path (str): Dataset in Hugging Face (e.g., "SouthernCrossAI/Project_Gutenberg_Australia")
-            column_name (str): Column name that contains the text in the dataset.
+            data_path (str): Dataset in Hugging Face (e.g., SouthernCrossAI/Project_Gutenberg_Australia)
+            column_name (str): Column name that contains the text in the dataset
             sequence_length (int): Maximum sequence length for input sequences
             train_file (str): File path for training set
             valid_file (str): File path for validation set
             split_ratio (float, optional): Split ratio for validation set. Defaults to 0.2.
+            sample_ratio (float, optional): Sample ratio of whole dataset. Set to 1 for using whole dataset. 
+                                            Defaults to 0.3.
         """
         self.data_path = data_path
         # TODO: move this attr to load_or_create_datasets or add new arg to tokenize_function
@@ -35,10 +40,11 @@ class BabyJoeyDataset:
         self.tokenizer.pad_token = self.tokenizer.eos_token
         self.split_ratio = split_ratio
         self.column_name = column_name
+        self.sample_ratio = sample_ratio
 
     # TODO: name is redundant
     def tokenize_function(self, dataset: DatasetDict) -> BatchEncoding:
-        """Tokenise a dataset. Truncate input sequence if it's longer than `sequence_length`.
+        r"""Tokenise a dataset. Truncate input sequence if it's longer than `sequence_length`.
 
         Args:
             dataset (DatasetDict): input dataset to tokenise
@@ -56,21 +62,34 @@ class BabyJoeyDataset:
         )
 
     def load_or_create_datasets(self) -> Tuple[Dataset, Dataset]:
-        """Load tokenised datasets from Hugging Face if they are not existed. Otherwise, load from local files.
+        r"""Load tokenised datasets from Hugging Face if they are not existed. Otherwise, load from local files.
 
         Returns:
             Tuple[Dataset, Dataset]: Return the tokenised training set and validation set
         """
         # Load tokenised datasets from local files if they are existed
         if os.path.exists(self.train_file) and os.path.exists(self.valid_file):
+            print(f"Loading tokenised training set from `{self.train_file}`, tokenised validation set from `{self.valid_file}`...")
             training_dataset = torch.load(self.train_file)
             validation_dataset = torch.load(self.valid_file)
-            print("Loaded existing transformed datasets.")
+            print(f"Training set has {len(training_dataset)} data, validation set has {len(validation_dataset)} data")
         else:
+            print(f"Downloading dataset from `{self.data_path}`...")
             # Pull datasets from Hugging Face
-            dataset = load_dataset(self.data_path)
-            dataset = dataset['train'].train_test_split(test_size=self.split_ratio)
+            dataset = load_dataset(self.data_path)['train']
+            print("Finished downloading dataset from Hugging Face")
+            # Sample from dataset if needed
+            if 0 < self.sample_ratio < 1:
+                _n_old, _n_new = len(dataset), int(len(dataset) * self.sample_ratio)
+                print(f"Sampling dataset with ratio of {self.sample_ratio}...")
+                dataset = BabyJoeyUtil.sample_dataset(dataset, self.sample_ratio)
+                print(f'Original dataset has {_n_old} data, sampled dataset has {_n_new} data')
+            # Split dataset into training set and validation set
+            print(f"Splitting dataset with split ratio of {self.split_ratio}...")
+            dataset = dataset.train_test_split(test_size=self.split_ratio)
+            print(f"Training set has {len(dataset['train'])} data, validation set has {len(dataset['test'])} data")
             # Tokenise the loaded datasets by a tokeniser
+            print("Tokenising training set and validation set...")
             training_dataset = dataset['train'].map(self.tokenize_function, batched=True)
             validation_dataset = dataset['test'].map(self.tokenize_function, batched=True)
             # Set format for attention
@@ -79,6 +98,6 @@ class BabyJoeyDataset:
             # Save the tokenised dataset into local paths
             torch.save(training_dataset, self.train_file)
             torch.save(validation_dataset, self.valid_file)
-            print(f"Tokenised training set has been saved at:\n{self.train_file}")
-            print(f"Tokenised validation set has been saved at:\n{self.valid_file}")
+            print(f"Saved tokenised training set at `{self.train_file}`, tokenised validation set at `{self.valid_file}`")
+            
         return training_dataset, validation_dataset
