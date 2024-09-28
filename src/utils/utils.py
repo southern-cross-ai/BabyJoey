@@ -1,10 +1,9 @@
-from ast import List
 import random
+from ast import List
 from typing import Tuple
 
 from rdflib import Dataset
-from torch import Tensor, nn
-from torch.utils.data import Subset, TensorDataset
+from torch import nn
 
 
 class BabyJoeyUtil:
@@ -23,9 +22,6 @@ class BabyJoeyUtil:
         """
         return int(sum(p.numel() for p in model.parameters() if p.requires_grad))
 
-    # TODO: The current function is not tested and used in the main.py file.
-    #       Consider using it inside BabyJoeyDataset when initialising an instance in
-    #       `main.py`, and set `fraction` as an optional argument.
     @staticmethod
     def sample_dataset(dataset: Dataset, ratio: float = 0.2, seed: int = 42) -> Dataset:
         """Sample a fraction of the dataset.
@@ -38,7 +34,7 @@ class BabyJoeyUtil:
         Returns:
             Dataset: Sampled dataset.
         """
-        random.seed(42)
+        random.seed(seed)
         dataset_size = len(dataset)
         reduced_size = int(dataset_size * ratio)
         indices = random.sample(range(dataset_size), reduced_size)

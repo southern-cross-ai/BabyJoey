@@ -1,6 +1,6 @@
 #--------------------------------------------------------#
 #                   Hugging Face Setup                   #
-#            BabyJoeyDataset - data/dataset.py           #
+#           BabyJoeyDataset - src/data/data.py           #
 #--------------------------------------------------------#
 
 # dataset from Hugging Face Hub in format 'username/dataset_name'
@@ -10,8 +10,8 @@ COLUMN_NAME = 'tweet'
 
 
 #--------------------------------------------------------#
-#                   Local Dataset Setup                  #
-#            BabyJoeyDataset - data/dataset.py           #
+#                      Dataset Setup                     #
+#           BabyJoeyDataset - src/data/data.py           #
 #--------------------------------------------------------#
 
 # local path to load/store tokenised training set, default to 'dataset_name_train.py'
@@ -19,23 +19,23 @@ TRAIN_FILE = f'{DATA.split('/')[-1]}_train.pt'
 # local path to load/store tokenised validation set, default to 'dataset_name_valid.py'
 VALID_FILE = f'{DATA.split('/')[-1]}_valid.pt'
 # percentage of dataset out of whole dataset, set to 1 for using whole dataset
-SAMPLE_RATIO = 0.3
+SAMPLE_RATIO = 1
 # percentage of validation set out of (sampled) dataset, 1 - SPLIT_RATIO for training set
 SPLIT_RATIO = 0.2
 
 
 #--------------------------------------------------------#
 #                    Dataloader Setup                    #
-#         BabyJoeyDataLoader - data/dataloader.py        #
+#         BabyJoeyDataLoader - src/data/data.py          #
 #--------------------------------------------------------#
 
-# batch size for both training and validation
+# batch size for training and validation dataloaders
 BATCH_SIZE = 2
 
 
 #--------------------------------------------------------#
-#                    Model Structure                     #
-#            BabyJoeyModel - model/model.py              #
+#                     Model Structure                    #
+#           BabyJoeyModel - src/model/model.py           #
 #--------------------------------------------------------#
 
 # total number of unique tokens
@@ -53,8 +53,8 @@ N_LAYER_DECODER = 1
 
 
 #--------------------------------------------------------#
-#               Optimisation Hyperparameters             #
-#            BabyJoeyUnit - training/train.py            #
+#              Optimisation Hyperparameters              #
+#           BabyJoeyUnit - src/train/train.py            #
 #--------------------------------------------------------#
 
 # learning rate for AdamW optimizer # TODO: can users change to different optimisers?
