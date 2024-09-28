@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 from datasets import Dataset, DatasetDict, load_dataset
 from transformers import BatchEncoding, GPT2Tokenizer
 
-from src import BabyJoeyUtil
+from src.utils import BabyJoeyUtil
 
 class BabyJoeyDataset:
     def __init__(self, 

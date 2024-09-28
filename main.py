@@ -1,6 +1,11 @@
 # Make sure you install the required packages >>> pip install -r requirements.txt
-
-from src.data.data import BabyJoeyDataLoader, BabyJoeyDataset
+import torch
+from torchtnt.framework.fit import fit
+from src.data import BabyJoeyDataLoader, BabyJoeyDataset
+from src.model import BabyJoeyModel
+from src.train import BabyJoeyUnit
+from src.callbacks import Log
+from src.utils import BabyJoeyUtil
 
 # load hyperparameters defined in config/config.py
 print("Loading configurations from `config.py`...")
@@ -11,24 +16,6 @@ from src.config.config import (
     VOCAB_SIZE, SEQUENCE_LENGTH, N_EMBD, N_HEAD, N_LAYER_DECODER,  # Model Structure
     LEARNING_RATE, WEIGHT_DECAY, STEP_SIZE, GAMMA,                 # Optimisation Hyperparameters
 )
-# load functional classes from submodules under src
-print("Loading core functional classes under `src`...")
-from src import (
-    BabyJoeyModel,       # model/model.py - definitions of model structure
-    BabyJoeyUnit,        # training/train.py - logic of training and validation
-    Log,                 # logs/log.py - logging functions
-    WandB,               # TODO: finish wandb callback
-)
-# TODO: Is there a better design to manage util functions? Will src/__init.__py cause problems?
-print("Loading other utility classes under `src`...")
-from src import (
-    BabyJoeyUtil         # util/utils.py
-)
-
-import torch
-from torch.utils.data import Subset
-from torchtnt.framework.fit import fit
-
 
 def main():
     # download/save datasets if not existed, otherwise load tokenised datasets
