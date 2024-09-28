@@ -19,25 +19,23 @@ from src.config.config import (
     SAMPLE_RATIO,
     SPLIT_RATIO,
     BATCH_SIZE,
-    VOCAB_SIZE,
-    SEQUENCE_LENGTH,
-    N_EMBD,
-    N_HEAD,
-    N_LAYER_DECODER,
     LEARNING_RATE,
     WEIGHT_DECAY,
     STEP_SIZE,
     GAMMA
 )
 
+import hydra
+from omegaconf import DictConfig
 
-def main():
+@hydra.main(version_base=None, config_name="baby_joey_config")
+def main(cfg: DictConfig):
     # download/save datasets if not existed, otherwise load tokenised datasets
     print("Preparing training and validation datasets...")
     dataset = BabyJoeyDataset(
         data_path=DATA,                   # hf dataset
         column_name=COLUMN_NAME,          # column of dataset to use as input
-        sequence_length=SEQUENCE_LENGTH,  # max token length of input
+        sequence_length=512,  # max token length of input
         train_file=TRAIN_FILE,            # path to load/save tokenised training set
         valid_file=VALID_FILE,            # path to load/save tokenised validation set
         split_ratio=SPLIT_RATIO,          # split ratio of validation set
@@ -58,7 +56,9 @@ def main():
     # TODO: Load device config from config.py? When to explicitly specify device?
     # TODO: Support more devices later https://pytorch.org/docs/stable/distributed.html
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = BabyJoeyModel(VOCAB_SIZE, N_EMBD, N_HEAD, N_LAYER_DECODER, SEQUENCE_LENGTH).to(device)
+    # model = BabyJoeyModel(cfg)
+
+    model = BabyJoeyModel(cfg).to(device)
     n_params = BabyJoeyUtil.count_params(model)
     print(f"Initialised a model on device {device} with {n_params} trainable parameters")
     
