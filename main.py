@@ -1,56 +1,73 @@
-print('Getting imports')
-
 # Make sure you install the required packages >>> pip install -r requirements.txt
-
-from src.config.config import (  # load user-specified hyperparams from config.py
-    TRAIN_FILE, VALID_FILE, DATA, BATCH_SIZE,                      # dataset settings
-    VOCAB_SIZE, SEQUENCE_LENGTH, N_EMBD, N_HEAD, N_LAYER_DECODER,  # model configs
-    # LEARNING_RATE, WEIGHT_DECAY, STEP_SIZE, GAMMA,               # SGD hyperparams
-)
-from src import (        # load functional classes from submodules under src
-    BabyJoeyDataLoader,  # dataloader.py - return dataloaders for training and validation
-    BabyJoeyDataset,     # dataset.py - load dataset configured by DATA from Hugging Face
-    BabyJoeyModel,       # model.py - nn.Module subclass, contains definitions of Embeddings and TransformerBlock
-    BabyJoeyUnit,        # train.py - AutoUnit subclass
-    Log,                 # log.py - Callback subclass
-    WandB,               # wandb.py - Callback subclass
-)
-from src.utils.count_param import count_parameters  # utils.py - count model parameters
-
 import torch
-from torch.utils.data import Subset
 from torchtnt.framework.fit import fit
+from src.data import BabyJoeyDataLoader, BabyJoeyDataset
+from src.model import BabyJoeyModel
+from src.train import BabyJoeyUnit
+from src.callbacks import Log
+from src.utils import BabyJoeyUtil
 
-
-print('Starting Main()')
+# load hyperparameters defined in config/config.py
+print("Loading configurations from `config.py`...")
+from src.config.config import (
+    DATA, COLUMN_NAME,                                             # Hugging Face Setup
+    TRAIN_FILE, VALID_FILE, SAMPLE_RATIO, SPLIT_RATIO,             # Local Dataset Setup
+    BATCH_SIZE,                                                    # Dataloader Setup
+    VOCAB_SIZE, SEQUENCE_LENGTH, N_EMBD, N_HEAD, N_LAYER_DECODER,  # Model Structure
+    LEARNING_RATE, WEIGHT_DECAY, STEP_SIZE, GAMMA,                 # Optimisation Hyperparameters
+)
 
 def main():
-    print('Getting data...')
-    # Load datasets
+    # download/save datasets if not existed, otherwise load tokenised datasets
+    print("Preparing training and validation datasets...")
     dataset = BabyJoeyDataset(
-        data_path=DATA, 
-        sequence_length=SEQUENCE_LENGTH, 
-        train_file=TRAIN_FILE, 
-        valid_file=VALID_FILE)
+        data_path=DATA,                   # hf dataset
+        column_name=COLUMN_NAME,          # column of dataset to use as input
+        sequence_length=SEQUENCE_LENGTH,  # max token length of input
+        train_file=TRAIN_FILE,            # path to load/save tokenised training set
+        valid_file=VALID_FILE,            # path to load/save tokenised validation set
+        split_ratio=SPLIT_RATIO,          # split ratio of validation set
+        sample_ratio=SAMPLE_RATIO         # sample ratio of whole dataset
+    )
+    # TODO: Integrate sample_dataset when initialising BabyJoeyDataset.
+    #       Consider moving it into a function under BabyJoeyDataset class,
+    #       or calling from utils insider BabyJoeyDataset.
     training_dataset, validation_dataset = dataset.load_or_create_datasets()
+    print("Created training and validation datasets")
 
-    # Prepare DataLoaders
+    # prepare dataloaders given predefined batch size
+    print("Preparing training and validation dataloaders...")
     dataloader = BabyJoeyDataLoader(training_dataset, validation_dataset, BATCH_SIZE)
     training_dataloader, validation_dataloader = dataloader.get_dataloaders()
-    print(f"Total number of training batches: {len(training_dataloader)}")
-    print(f"Total number of validation batches: {len(validation_dataloader)}")
+    print(f"Training dataloader has {len(training_dataloader)} batches, "\
+          f"validation dataloader has {len(validation_dataloader)} batches")
 
-    # Prepare BabyJoey
-    print("Getting Model")
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # TODO: Load device from config.py?
+    # initialise a model based on predefined model structure
+    print("Building a model...")
+    # TODO: Load device config from config.py? When to explicitly specify device?
+    # TODO: Support more devices later https://pytorch.org/docs/stable/distributed.html
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = BabyJoeyModel(VOCAB_SIZE, N_EMBD, N_HEAD, N_LAYER_DECODER, SEQUENCE_LENGTH).to(device)
-    print(f"Number of trainable parameters: {count_parameters(model)}")
+    n_params = BabyJoeyUtil.count_params(model)
+    print(f"Initialised a model on {device} with {n_params} trainable parameters")
     
-    # Prepare AutoUnit
-    baby_joey_unit = BabyJoeyUnit(module=model, device=device)  # training AutoUnit # TODO: Add rank for DDP
+    # TODO: Add comments for AutoUnit
+    # prepare AutoUnit
+    print("Preparing for training/evaluation/prediction logic...")
+    baby_joey_unit = BabyJoeyUnit(
+        module=model, 
+        device=device, 
+        lr=LEARNING_RATE,           # default 1e-5
+        weight_decay=WEIGHT_DECAY,  # default 1e-3
+        step_size=STEP_SIZE,        # default 1
+        gamma=GAMMA                 # default 0.9
+        # TODO: Add rank arguments for DDP
+        )
+    # TODO: Based on which functions are implemented, provide more info on what logic will be executed.
+    print("Created training/evaluation/prediction logic")
 
-    # Train and evaluate the model using the defined AutoUnit and callback
-    print("Starting training")
+    # Train and evaluate the model using the defined AutoUnit and Callbacks
+    print("Executing training/evaluation/prediction process...")
     fit(
         baby_joey_unit,  # training AutoUnit in train.py
         train_dataloader=training_dataloader,
@@ -58,6 +75,7 @@ def main():
         max_epochs=2,  # TODO: Load from config.py
         callbacks=[Log()]
     )
+    print("Finished training/evaluation/prediction process")
 
 
 if __name__ == "__main__":
