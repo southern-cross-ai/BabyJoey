@@ -1,11 +1,13 @@
 import os
-import torch
 from typing import Tuple
+
+import torch
 from torch.utils.data import DataLoader
 from datasets import Dataset, DatasetDict, load_dataset
 from transformers import BatchEncoding, GPT2Tokenizer
 
 from src.utils import BabyJoeyUtil
+
 
 class BabyJoeyDataset:
     def __init__(self, 
@@ -14,7 +16,7 @@ class BabyJoeyDataset:
                  train_file: str, 
                  valid_file: str, 
                  split_ratio: float = 0.2, 
-                 sample_ratio: float = 0.3, 
+                 sample_ratio: float = 1, 
                  sequence_length: int = 128
                  ) -> None:
         r"""Initialise a dataset class for BabyJoey.
@@ -27,7 +29,7 @@ class BabyJoeyDataset:
             valid_file (str): File path for validation set
             split_ratio (float, optional): Split ratio for validation set. Defaults to 0.2.
             sample_ratio (float, optional): Sample ratio of whole dataset. Set to 1 for using whole dataset. 
-                                            Defaults to 0.3.
+                                            Defaults to 1.
         """
         self.data_path = data_path
         # TODO: move this attr to load_or_create_datasets or add new arg to tokenize_function
@@ -81,8 +83,10 @@ class BabyJoeyDataset:
             if 0 < self.sample_ratio < 1:
                 _n_old, _n_new = len(dataset), int(len(dataset) * self.sample_ratio)
                 print(f"Sampling dataset with ratio of {self.sample_ratio}...")
-                dataset = BabyJoeyUtil.sample_dataset(dataset, self.sample_ratio)
+                dataset = BabyJoeyUtil.sample_dataset(dataset, self.sample_ratio, seed=42)
                 print(f'Original dataset has {_n_old} data, sampled dataset has {_n_new} data')
+            else:
+                print(f"Whole dataset has {len(dataset)} data")
             # Split dataset into training set and validation set
             print(f"Splitting dataset with split ratio of {self.split_ratio}...")
             dataset = dataset.train_test_split(test_size=self.split_ratio)
@@ -102,16 +106,24 @@ class BabyJoeyDataset:
         return training_dataset, validation_dataset
 
 class BabyJoeyDataLoader:
-    def __init__(self, training_dataset, validation_dataset, batch_size):
+    def __init__(self, training_dataset: Dataset, validation_dataset: Dataset, batch_size: int):
+        r"""Initialise dataloaders for training set and validation set.
+
+        Args:
+            training_dataset (Dataset): Training set to use.
+            validation_dataset (Dataset): Validation set to use.
+            batch_size (int): Batch size for training dataloader and validation dataloader.
+        """
         self.training_dataset = training_dataset
         self.validation_dataset = validation_dataset
         self.batch_size = batch_size
 
     def get_dataloaders(self) -> Tuple[DataLoader, DataLoader]:
-        """Generate dataloaders for training and validation.
+        r"""Generate dataloaders for training and validation.
 
         Returns:
-            Tuple[DataLoader, DataLoader]: Returned dataloaders
+            Tuple[DataLoader, DataLoader]: A tuple that contains raining dataloader and 
+                                           validation dataloader.
         """
         training_dataloader = DataLoader(self.training_dataset,
                                          batch_size=self.batch_size,

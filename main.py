@@ -1,21 +1,35 @@
 # Make sure you install the required packages >>> pip install -r requirements.txt
 import torch
 from torchtnt.framework.fit import fit
+
+print("Loading BabyJoey core classes under `src`...")
+from src.callbacks import Log
 from src.data import BabyJoeyDataLoader, BabyJoeyDataset
 from src.model import BabyJoeyModel
 from src.train import BabyJoeyUnit
-from src.callbacks import Log
 from src.utils import BabyJoeyUtil
 
-# load hyperparameters defined in config/config.py
+# load predefined global parameters, see details in config/config.py
 print("Loading configurations from `config.py`...")
 from src.config.config import (
-    DATA, COLUMN_NAME,                                             # Hugging Face Setup
-    TRAIN_FILE, VALID_FILE, SAMPLE_RATIO, SPLIT_RATIO,             # Local Dataset Setup
-    BATCH_SIZE,                                                    # Dataloader Setup
-    VOCAB_SIZE, SEQUENCE_LENGTH, N_EMBD, N_HEAD, N_LAYER_DECODER,  # Model Structure
-    LEARNING_RATE, WEIGHT_DECAY, STEP_SIZE, GAMMA,                 # Optimisation Hyperparameters
+    DATA,
+    COLUMN_NAME,
+    TRAIN_FILE,
+    VALID_FILE,
+    SAMPLE_RATIO,
+    SPLIT_RATIO,
+    BATCH_SIZE,
+    VOCAB_SIZE,
+    SEQUENCE_LENGTH,
+    N_EMBD,
+    N_HEAD,
+    N_LAYER_DECODER,
+    LEARNING_RATE,
+    WEIGHT_DECAY,
+    STEP_SIZE,
+    GAMMA
 )
+
 
 def main():
     # download/save datasets if not existed, otherwise load tokenised datasets
@@ -29,14 +43,11 @@ def main():
         split_ratio=SPLIT_RATIO,          # split ratio of validation set
         sample_ratio=SAMPLE_RATIO         # sample ratio of whole dataset
     )
-    # TODO: Integrate sample_dataset when initialising BabyJoeyDataset.
-    #       Consider moving it into a function under BabyJoeyDataset class,
-    #       or calling from utils insider BabyJoeyDataset.
     training_dataset, validation_dataset = dataset.load_or_create_datasets()
-    print("Created training and validation datasets")
+    print("Created tokenised training set and tokenised validation set")
 
     # prepare dataloaders given predefined batch size
-    print("Preparing training and validation dataloaders...")
+    print("Preparing training dataloader and validation dataloader...")
     dataloader = BabyJoeyDataLoader(training_dataset, validation_dataset, BATCH_SIZE)
     training_dataloader, validation_dataloader = dataloader.get_dataloaders()
     print(f"Training dataloader has {len(training_dataloader)} batches, "\
@@ -49,25 +60,26 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = BabyJoeyModel(VOCAB_SIZE, N_EMBD, N_HEAD, N_LAYER_DECODER, SEQUENCE_LENGTH).to(device)
     n_params = BabyJoeyUtil.count_params(model)
-    print(f"Initialised a model on {device} with {n_params} trainable parameters")
+    print(f"Initialised a model on device {device} with {n_params} trainable parameters")
     
-    # TODO: Add comments for AutoUnit
     # prepare AutoUnit
     print("Preparing for training/evaluation/prediction logic...")
+    # TODO: Add comments for AutoUnit
+    # TODO: Add rank arguments for DDP later
+    # TODO: Based on which functions are implemented, provide more info on what logic will be executed.
     baby_joey_unit = BabyJoeyUnit(
         module=model, 
-        device=device, 
-        lr=LEARNING_RATE,           # default 1e-5
-        weight_decay=WEIGHT_DECAY,  # default 1e-3
-        step_size=STEP_SIZE,        # default 1
-        gamma=GAMMA                 # default 0.9
-        # TODO: Add rank arguments for DDP
-        )
-    # TODO: Based on which functions are implemented, provide more info on what logic will be executed.
+        device=device,
+        lr=LEARNING_RATE, 
+        weight_decay=WEIGHT_DECAY, 
+        step_size=STEP_SIZE, 
+        gamma=GAMMA 
+    )
     print("Created training/evaluation/prediction logic")
 
     # Train and evaluate the model using the defined AutoUnit and Callbacks
-    print("Executing training/evaluation/prediction process...")
+    print("Executing training/evaluation/prediction logic...")
+    # TODO: Add more helpful print information
     fit(
         baby_joey_unit,  # training AutoUnit in train.py
         train_dataloader=training_dataloader,
@@ -75,7 +87,7 @@ def main():
         max_epochs=2,  # TODO: Load from config.py
         callbacks=[Log()]
     )
-    print("Finished training/evaluation/prediction process")
+    print("Finished training/evaluation/prediction logic")
 
 
 if __name__ == "__main__":
