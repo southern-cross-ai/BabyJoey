@@ -4,7 +4,7 @@
 print("Loading configurations from `config.py`...")
 from src.config.config import (
     DATA, COLUMN_NAME,                                             # Hugging Face Setup
-    TRAIN_FILE, VALID_FILE, SPLIT_RATIO,                           # Local Dataset Setup
+    TRAIN_FILE, VALID_FILE, SAMPLE_RATIO, SPLIT_RATIO,             # Local Dataset Setup
     BATCH_SIZE,                                                    # Dataloader Setup
     VOCAB_SIZE, SEQUENCE_LENGTH, N_EMBD, N_HEAD, N_LAYER_DECODER,  # Model Structure
     LEARNING_RATE, WEIGHT_DECAY, STEP_SIZE, GAMMA,                 # Optimisation Hyperparameters
@@ -34,12 +34,17 @@ def main():
     # download/save datasets if not existed, otherwise load tokenised datasets
     print("Preparing training and validation datasets...")
     dataset = BabyJoeyDataset(
-        data_path=DATA, 
-        column_name=COLUMN_NAME,
-        sequence_length=SEQUENCE_LENGTH, 
-        train_file=TRAIN_FILE, 
-        valid_file=VALID_FILE,
-        split_ratio=SPLIT_RATIO)
+        data_path=DATA,                   # hf dataset
+        column_name=COLUMN_NAME,          # column of dataset to use as input
+        sequence_length=SEQUENCE_LENGTH,  # max token length of input
+        train_file=TRAIN_FILE,            # path to load/save tokenised training set
+        valid_file=VALID_FILE,            # path to load/save tokenised validation set
+        split_ratio=SPLIT_RATIO,          # split ratio of validation set
+        sample_ratio=SAMPLE_RATIO         # sample ratio of whole dataset
+    )
+    # TODO: Integrate sample_dataset when initialising BabyJoeyDataset.
+    #       Consider moving it into a function under BabyJoeyDataset class,
+    #       or calling from utils insider BabyJoeyDataset.
     training_dataset, validation_dataset = dataset.load_or_create_datasets()
     print("Created training and validation datasets")
 
