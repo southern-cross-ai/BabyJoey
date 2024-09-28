@@ -1,5 +1,7 @@
 # Make sure you install the required packages >>> pip install -r requirements.txt
 
+from src.data.data import BabyJoeyDataLoader, BabyJoeyDataset
+
 # load hyperparameters defined in config/config.py
 print("Loading configurations from `config.py`...")
 from src.config.config import (
@@ -12,8 +14,6 @@ from src.config.config import (
 # load functional classes from submodules under src
 print("Loading core functional classes under `src`...")
 from src import (
-    BabyJoeyDataLoader,  # data/dataloader.py - dataloaders for training and validation sets
-    BabyJoeyDataset,     # data/dataset.py - datasets for training and validation
     BabyJoeyModel,       # model/model.py - definitions of model structure
     BabyJoeyUnit,        # training/train.py - logic of training and validation
     Log,                 # logs/log.py - logging functions

@@ -1,12 +1,11 @@
 import os
-from typing import Tuple
-
 import torch
+from typing import Tuple
+from torch.utils.data import DataLoader
 from datasets import Dataset, DatasetDict, load_dataset
 from transformers import BatchEncoding, GPT2Tokenizer
 
 from src import BabyJoeyUtil
-
 
 class BabyJoeyDataset:
     def __init__(self, 
@@ -101,3 +100,23 @@ class BabyJoeyDataset:
             print(f"Saved tokenised training set at `{self.train_file}`, tokenised validation set at `{self.valid_file}`")
             
         return training_dataset, validation_dataset
+
+class BabyJoeyDataLoader:
+    def __init__(self, training_dataset, validation_dataset, batch_size):
+        self.training_dataset = training_dataset
+        self.validation_dataset = validation_dataset
+        self.batch_size = batch_size
+
+    def get_dataloaders(self) -> Tuple[DataLoader, DataLoader]:
+        """Generate dataloaders for training and validation.
+
+        Returns:
+            Tuple[DataLoader, DataLoader]: Returned dataloaders
+        """
+        training_dataloader = DataLoader(self.training_dataset,
+                                         batch_size=self.batch_size,
+                                         shuffle=True)
+        validation_dataloader = DataLoader(self.validation_dataset,
+                                           batch_size=self.batch_size,
+                                           shuffle=False)
+        return training_dataloader, validation_dataloader
