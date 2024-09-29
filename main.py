@@ -15,12 +15,6 @@ from src.config.config import BabyJoeyConfig
 # load predefined global parameters, see details in config/config.py
 print("Loading configurations from `config.py`...")
 from src.config.config import (
-    # DATA,
-    #COLUMN_NAME,
-    # TRAIN_FILE,
-    # VALID_FILE,
-    SAMPLE_RATIO,
-    SPLIT_RATIO,
     BATCH_SIZE,
     LEARNING_RATE,
     WEIGHT_DECAY,
