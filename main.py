@@ -10,14 +10,15 @@ from src.data import BabyJoeyDataLoader, BabyJoeyDataset
 from src.model import BabyJoeyModel
 from src.train import BabyJoeyUnit
 from src.utils import BabyJoeyUtil
+from src.config.config import BabyJoeyConfig
 
 # load predefined global parameters, see details in config/config.py
 print("Loading configurations from `config.py`...")
 from src.config.config import (
-    DATA,
-    COLUMN_NAME,
-    TRAIN_FILE,
-    VALID_FILE,
+    # DATA,
+    #COLUMN_NAME,
+    # TRAIN_FILE,
+    # VALID_FILE,
     SAMPLE_RATIO,
     SPLIT_RATIO,
     BATCH_SIZE,
@@ -27,18 +28,19 @@ from src.config.config import (
     GAMMA
 )
 
+
 @hydra.main(version_base=None, config_name="baby_joey_config")
-def main(cfg: DictConfig):
+def main(cfg: BabyJoeyConfig):
     # download/save datasets if not existed, otherwise load tokenised datasets
     print("Preparing training and validation datasets...")
     dataset = BabyJoeyDataset(
-        data_path=DATA,                   # hf dataset
-        column_name=COLUMN_NAME,          # column of dataset to use as input
-        sequence_length=512,  # max token length of input
-        train_file=TRAIN_FILE,            # path to load/save tokenised training set
-        valid_file=VALID_FILE,            # path to load/save tokenised validation set
-        split_ratio=SPLIT_RATIO,          # split ratio of validation set
-        sample_ratio=SAMPLE_RATIO         # sample ratio of whole dataset
+        data_path=cfg.data.data_path,                   # hf dataset
+        column_name=cfg.data.column_name,               # column of dataset to use as input
+        sequence_length=cfg.data.sequence_length,       # max token length of input
+        train_file=cfg.data.train_file,                 # path to load/save tokenised training set
+        valid_file=cfg.data.valid_file,                 # path to load/save tokenised validation set
+        split_ratio=cfg.data.split_ratio,               # split ratio of validation set
+        sample_ratio=cfg.data.sample_ratio              # sample ratio of whole dataset
     )
     training_dataset, validation_dataset = dataset.load_or_create_datasets()
     print("Created tokenised training set and tokenised validation set")

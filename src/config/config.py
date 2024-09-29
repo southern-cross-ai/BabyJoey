@@ -29,12 +29,25 @@ class ModelConfig:
     step_size: int = 1
     gamma: float = 0.9
 
+@dataclass
+class BabyJoeyDataConfig:
+    """Configuration class for BabyJoey dataset parameters."""
+    data_path: str = "SouthernCrossAI/Tweets_cricket"
+    sequence_length: int = 512
+    train_file: str = "train_data.pt"
+    valid_file: str = "valid_data.pt"
+    split_ratio: float = 0.2
+    column_name: str = "tweet"
+    sample_ratio: float = 0.1
+    seed: int = 42
+
 # Define BabyJoeyConfig using default_factory for mutable types
 @dataclass
 class BabyJoeyConfig:
     embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
     transformer: TransformerConfig = field(default_factory=TransformerConfig)
     model: ModelConfig = field(default_factory=ModelConfig)
+    data: BabyJoeyDataConfig = field(default_factory=BabyJoeyDataConfig)
 
 # Register the configuration in Hydra's ConfigStore
 cs = ConfigStore.instance()
