@@ -1,3 +1,48 @@
+from dataclasses import dataclass, field
+from hydra.core.config_store import ConfigStore
+
+
+#--------------------------------------------------------#
+#                     Model Structure                    #
+#           BabyJoeyModel - src/model/model.py           #
+#--------------------------------------------------------#
+# hidden layer size for two-layer FC MLP # TODO: current hidden layer size is hard-coded as 4 * N_EMBD in model.py
+# N_HIDDEN_MLP = 4 * N_EMBD
+
+@dataclass
+class EmbeddingConfig:              # total number of unique tokens
+    vocab_size: int = 50257
+    sequence_length: int = 512      # maximum number of tokens in one sequence, or time steps (T)
+    n_embd: int = 512               # dimension of embedding vectors, or channel size (C)
+
+# Define TransformerConfig for transformer blocks
+@dataclass
+class TransformerConfig:
+    n_head: int = 8                 # number of multi-head attentions in each decoder block
+    n_layer_decoder: int = 1        # total number of decoder blocks
+
+# Define ModelConfig for the model
+@dataclass
+class ModelConfig:
+    learning_rate: float = 1e-5
+    weight_decay: float = 1e-3
+    step_size: int = 1
+    gamma: float = 0.9
+
+# Define BabyJoeyConfig using default_factory for mutable types
+@dataclass
+class BabyJoeyConfig:
+    embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
+    transformer: TransformerConfig = field(default_factory=TransformerConfig)
+    model: ModelConfig = field(default_factory=ModelConfig)
+
+# Register the configuration in Hydra's ConfigStore
+cs = ConfigStore.instance()
+cs.store(name="baby_joey_config", node=BabyJoeyConfig)
+
+
+
+
 #--------------------------------------------------------#
 #                   Hugging Face Setup                   #
 #           BabyJoeyDataset - src/data/data.py           #
@@ -31,25 +76,6 @@ SPLIT_RATIO = 0.2
 
 # batch size for training and validation dataloaders
 BATCH_SIZE = 2
-
-
-#--------------------------------------------------------#
-#                     Model Structure                    #
-#           BabyJoeyModel - src/model/model.py           #
-#--------------------------------------------------------#
-
-# total number of unique tokens
-VOCAB_SIZE = 50257
-# maximum number of tokens in one sequence, or time steps (T)
-SEQUENCE_LENGTH = 512
-# dimension of embedding vectors, or channel size (C)
-N_EMBD = 512
-# number of multi-head attentions in each decoder block
-N_HEAD = 8
-# total number of decoder blocks
-N_LAYER_DECODER = 1
-# hidden layer size for two-layer FC MLP # TODO: current hidden layer size is hard-coded as 4 * N_EMBD in model.py
-# N_HIDDEN_MLP = 4 * N_EMBD
 
 
 #--------------------------------------------------------#
