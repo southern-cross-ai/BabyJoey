@@ -1,6 +1,8 @@
 # Make sure you install the required packages >>> pip install -r requirements.txt
 import torch
 from torchtnt.framework.fit import fit
+import hydra
+from omegaconf import DictConfig
 
 print("Loading BabyJoey core classes under `src`...")
 from src.callbacks import Log
@@ -24,9 +26,6 @@ from src.config.config import (
     STEP_SIZE,
     GAMMA
 )
-
-import hydra
-from omegaconf import DictConfig
 
 @hydra.main(version_base=None, config_name="baby_joey_config")
 def main(cfg: DictConfig):
