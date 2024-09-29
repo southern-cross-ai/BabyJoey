@@ -62,15 +62,6 @@ class BabyJoeyDataset:
             dataset = load_dataset(self.data_path)['train']
             print("Finished downloading dataset from Hugging Face")
 
-            # Sample dataset if needed
-            if 0 < self.sample_ratio < 1:
-                _n_old, _n_new = len(dataset), int(len(dataset) * self.sample_ratio)
-                print(f"Sampling dataset with ratio of {self.sample_ratio}...")
-                dataset = BabyJoeyUtil.sample_dataset(dataset, self.sample_ratio, seed=42)
-                print(f'Original dataset has {_n_old} data, sampled dataset has {_n_new} data')
-            else:
-                print(f"Whole dataset has {len(dataset)} data")
-
             # Split dataset into training and validation sets
             print(f"Splitting dataset with split ratio of {self.split_ratio}...")
             dataset = dataset.train_test_split(test_size=self.split_ratio)
