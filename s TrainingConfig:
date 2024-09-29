@@ -1,0 +1,364 @@
+[1mdiff --git a/src/config/config.py b/src/config/config.py[m
+[1mindex 3000776..88b285e 100644[m
+[1m--- a/src/config/config.py[m
+[1m+++ b/src/config/config.py[m
+[36m@@ -54,7 +54,6 @@[m [mclass BabyJoeyDataConfig:[m
+ class TrainingConfig:[m
+     max_epochs: int = 2[m
+     device: str = 'cuda' if torch.cuda.is_available() else 'cpu'[m
+[31m-    callbacks: list = field(default_factory=lambda: ["Log"])[m
+ [m
+ [m
+ # BabyJoeyConfig for overall model configuration[m
+[36m@@ -71,169 +70,3 @@[m [mclass BabyJoeyConfig:[m
+ # Register the configuration in Hydra's ConfigStore[m
+ cs = ConfigStore.instance()[m
+ cs.store(name="baby_joey_config", node=BabyJoeyConfig)[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-#--------------------------------------------------------#[m
+[31m-#                     Model Structure                    #[m
+[31m-#           BabyJoeyModel - src/model/model.py           #[m
+[31m-#--------------------------------------------------------#[m
+[31m-# hidden layer size for two-layer FC MLP # TODO: current hidden layer size is hard-coded as 4 * N_EMBD in model.py[m
+[31m-# N_HIDDEN_MLP = 4 * N_EMBD[m
+[31m-[m
+[31m-# @dataclass[m
+[31m-# class EmbeddingConfig:              # total number of unique tokens[m
+[31m-#     vocab_size: int = 50257[m
+[31m-#     sequence_length: int = 512      # maximum number of tokens in one sequence, or time steps (T)[m
+[31m-#     n_embd: int = 512               # dimension of embedding vectors, or channel size (C)[m
+[31m-[m
+[31m-# # Define TransformerConfig for transformer blocks[m
+[31m-# @dataclass[m
+[31m-# class TransformerConfig:[m
+[31m-#     n_head: int = 8                 # number of multi-head attentions in each decoder block[m
+[31m-#     n_layer_decoder: int = 1        # total number of decoder blocks[m
+[31m-[m
+[31m-# # Define ModelConfig for the model[m
+[31m-# @dataclass[m
+[31m-# class ModelConfig:[m
+[31m-#     learning_rate: float = 1e-5[m
+[31m-#     weight_decay: float = 1e-3[m
+[31m-#     step_size: int = 1[m
+[31m-#     gamma: float = 0.9[m
+[31m-[m
+[31m-# @dataclass[m
+[31m-# class BabyJoeyDataConfig:[m
+[31m-#     """Configuration class for BabyJoey dataset parameters."""[m
+[31m-#     data_path: str = "SouthernCrossAI/Tweets_cricket"[m
+[31m-#     sequence_length: int = 512[m
+[31m-#     train_file: str = "train_data.pt"[m
+[31m-#     valid_file: str = "valid_data.pt"[m
+[31m-#     split_ratio: float = 0.2[m
+[31m-#     column_name: str = "tweet"[m
+[31m-#     sample_ratio: float = 0.1[m
+[31m-#     seed: int = 42[m
+[31m-[m
+[31m-# # Define BabyJoeyConfig using default_factory for mutable types[m
+[31m-# @dataclass[m
+[31m-# class BabyJoeyConfig:[m
+[31m-#     embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)[m
+[31m-#     transformer: TransformerConfig = field(default_factory=TransformerConfig)[m
+[31m-#     model: ModelConfig = field(default_factory=ModelConfig)[m
+[31m-#     data: BabyJoeyDataConfig = field(default_factory=BabyJoeyDataConfig)[m
+[31m-[m
+[31m-# # Register the configuration in Hydra's ConfigStore[m
+[31m-# cs = ConfigStore.instance()[m
+[31m-# cs.store(name="baby_joey_config", node=BabyJoeyConfig)[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-#--------------------------------------------------------#[m
+[31m-#                   Hugging Face Setup                   #[m
+[31m-#           BabyJoeyDataset - src/data/data.py           #[m
+[31m-#--------------------------------------------------------#[m
+[31m-[m
+[31m-# dataset from Hugging Face Hub in format 'username/dataset_name'[m
+[31m-DATA = 'SouthernCrossAI/Tweets_cricket'[m
+[31m-# dataset column that contains text to use, check on Hugging Face to find column name[m
+[31m-COLUMN_NAME = 'tweet'[m
+[31m-[m
+[31m-[m
+[31m-#--------------------------------------------------------#[m
+[31m-#                      Dataset Setup                     #[m
+[31m-#           BabyJoeyDataset - src/data/data.py           #[m
+[31m-#--------------------------------------------------------#[m
+[31m-[m
+[31m-# local path to load/store tokenised training set, default to 'dataset_name_train.py'[m
+[31m-TRAIN_FILE = f'{DATA.split('/')[-1]}_train.pt'[m
+[31m-# local path to load/store tokenised validation set, default to 'dataset_name_valid.py'[m
+[31m-VALID_FILE = f'{DATA.split('/')[-1]}_valid.pt'[m
+[31m-# percentage of dataset out of whole dataset, set to 1 for using whole dataset[m
+[31m-SAMPLE_RATIO = 1[m
+[31m-# percentage of validation set out of (sampled) dataset, 1 - SPLIT_RATIO for training set[m
+[31m-SPLIT_RATIO = 0.2[m
+[31m-[m
+[31m-[m
+[31m-#--------------------------------------------------------#[m
+[31m-#                    Dataloader Setup                    #[m
+[31m-#         BabyJoeyDataLoader - src/data/data.py          #[m
+[31m-#--------------------------------------------------------#[m
+[31m-[m
+[31m-# batch size for training and validation dataloaders[m
+[31m-BATCH_SIZE = 2[m
+[31m-[m
+[31m-[m
+[31m-#--------------------------------------------------------#[m
+[31m-#              Optimisation Hyperparameters              #[m
+[31m-#           BabyJoeyUnit - src/train/train.py            #[m
+[31m-#--------------------------------------------------------#[m
+[31m-[m
+[31m-# learning rate for AdamW optimizer # TODO: can users change to different optimisers?[m
+[31m-LEARNING_RATE = 1e-5[m
+[31m-# weight decay for AdamW optimizer[m
+[31m-WEIGHT_DECAY = 1e-3[m
+[31m-# period of learning rate decay for StepLR scheduler # TODO: can users change to different schedulers?[m
+[31m-STEP_SIZE = 1[m
+[31m-# multiplicative factor of learning rate decay for StepLR scheduler[m
+[31m-GAMMA = 0.9[m
+[31m-[m
+[31m-[m
+[31m-#--------------------------------------------------------#[m
+[31m-#                   GPT-2 References                     #[m
+[31m-#--------------------------------------------------------#[m
+[31m-[m
+[31m-"""[m
+[31m-GPT-2 Small[m
+[31m-- Hidden Size (C): 768 dimensions[m
+[31m-- Sequence Length (T): 1024 tokens[m
+[31m-- Attention Heads: 12 heads[m
+[31m-- Decoder Layers: 12 layers[m
+[31m-- Feed-Forward Network Size (4C): 3072 neurons[m
+[31m-- Total Parameters: 117 M[m
+[31m-"""[m
+[31m-# N_EMBD = 768[m
+[31m-# SEQUENCE_LENGTH = 1024[m
+[31m-# N_HEAD = 12[m
+[31m-# N_LAYER_DECODER = 12[m
+[31m-[m
+[31m-""" [m
+[31m-GPT-2 Medium[m
+[31m-- Hidden Size (C): 1024 dimensions[m
+[31m-- Sequence Length (T): 1024 tokens[m
+[31m-- Attention Heads: 16 heads[m
+[31m-- Decoder Layers: 24 layers[m
+[31m-- Feed-Forward Network Size (4C): 4096 neurons[m
+[31m-- Total Parameters: 345 M[m
+[31m-"""[m
+[31m-# N_EMBD = 1024[m
+[31m-# SEQUENCE_LENGTH = 1024[m
+[31m-# N_HEAD = 16[m
+[31m-# N_LAYER_DECODER = 24[m
+[31m-[m
+[31m-"""[m
+[31m-GPT-2 Large[m
+[31m-- Hidden Size (C): 1280 dimensions[m
+[31m-- Sequence Length (T): 1024 tokens[m
+[31m-- Attention Heads: 20 heads[m
+[31m-- Decoder Layers: 36 layers[m
+[31m-- Feed-Forward Network Size (4C): 5120 neurons[m
+[31m-- Total Parameters: 762 M[m
+[31m-"""[m
+[31m-# N_EMBD = 1280[m
+[31m-# SEQUENCE_LENGTH = 1024[m
+[31m-# N_HEAD = 20[m
+[31m-# N_LAYER_DECODER = 36[m
+[31m-[m
+[31m-"""[m
+[31m-GPT-2 Extra-Large[m
+[31m-- Hidden Size (C): 1600 dimensions[m
+[31m-- Sequence Length (T): 1024 tokens[m
+[31m-- Attention Heads: 25 heads[m
+[31m-- Decoder Layers: 48 layers[m
+[31m-- Feed-forward Network Size (4C): 6400 neurons[m
+[31m-- Total Parameters: 1.5 B[m
+[31m-"""[m
+[31m-# N_EMBD = 1600[m
+[31m-# SEQUENCE_LENGTH = 1024[m
+[31m-# N_HEAD = 25[m
+[31m-# N_LAYER_DECODER = 48[m
+[1mdiff --git a/src/config/config.py b/src/config/config.py[m
+[1mindex 3000776..88b285e 100644[m
+[1m--- a/src/config/config.py[m
+[1m+++ b/src/config/config.py[m
+[36m@@ -54,7 +54,6 @@[m [mclass BabyJoeyDataConfig:[m
+ class TrainingConfig:[m
+     max_epochs: int = 2[m
+     device: str = 'cuda' if torch.cuda.is_available() else 'cpu'[m
+[31m-    callbacks: list = field(default_factory=lambda: ["Log"])[m
+ [m
+ [m
+ # BabyJoeyConfig for overall model configuration[m
+[36m@@ -71,169 +70,3 @@[m [mclass BabyJoeyConfig:[m
+ # Register the configuration in Hydra's ConfigStore[m
+ cs = ConfigStore.instance()[m
+ cs.store(name="baby_joey_config", node=BabyJoeyConfig)[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-#--------------------------------------------------------#[m
+[31m-#                     Model Structure                    #[m
+[31m-#           BabyJoeyModel - src/model/model.py           #[m
+[31m-#--------------------------------------------------------#[m
+[31m-# hidden layer size for two-layer FC MLP # TODO: current hidden layer size is hard-coded as 4 * N_EMBD in model.py[m
+[31m-# N_HIDDEN_MLP = 4 * N_EMBD[m
+[31m-[m
+[31m-# @dataclass[m
+[31m-# class EmbeddingConfig:              # total number of unique tokens[m
+[31m-#     vocab_size: int = 50257[m
+[31m-#     sequence_length: int = 512      # maximum number of tokens in one sequence, or time steps (T)[m
+[31m-#     n_embd: int = 512               # dimension of embedding vectors, or channel size (C)[m
+[31m-[m
+[31m-# # Define TransformerConfig for transformer blocks[m
+[31m-# @dataclass[m
+[31m-# class TransformerConfig:[m
+[31m-#     n_head: int = 8                 # number of multi-head attentions in each decoder block[m
+[31m-#     n_layer_decoder: int = 1        # total number of decoder blocks[m
+[31m-[m
+[31m-# # Define ModelConfig for the model[m
+[31m-# @dataclass[m
+[31m-# class ModelConfig:[m
+[31m-#     learning_rate: float = 1e-5[m
+[31m-#     weight_decay: float = 1e-3[m
+[31m-#     step_size: int = 1[m
+[31m-#     gamma: float = 0.9[m
+[31m-[m
+[31m-# @dataclass[m
+[31m-# class BabyJoeyDataConfig:[m
+[31m-#     """Configuration class for BabyJoey dataset parameters."""[m
+[31m-#     data_path: str = "SouthernCrossAI/Tweets_cricket"[m
+[31m-#     sequence_length: int = 512[m
+[31m-#     train_file: str = "train_data.pt"[m
+[31m-#     valid_file: str = "valid_data.pt"[m
+[31m-#     split_ratio: float = 0.2[m
+[31m-#     column_name: str = "tweet"[m
+[31m-#     sample_ratio: float = 0.1[m
+[31m-#     seed: int = 42[m
+[31m-[m
+[31m-# # Define BabyJoeyConfig using default_factory for mutable types[m
+[31m-# @dataclass[m
+[31m-# class BabyJoeyConfig:[m
+[31m-#     embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)[m
+[31m-#     transformer: TransformerConfig = field(default_factory=TransformerConfig)[m
+[31m-#     model: ModelConfig = field(default_factory=ModelConfig)[m
+[31m-#     data: BabyJoeyDataConfig = field(default_factory=BabyJoeyDataConfig)[m
+[31m-[m
+[31m-# # Register the configuration in Hydra's ConfigStore[m
+[31m-# cs = ConfigStore.instance()[m
+[31m-# cs.store(name="baby_joey_config", node=BabyJoeyConfig)[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-#--------------------------------------------------------#[m
+[31m-#                   Hugging Face Setup                   #[m
+[31m-#           BabyJoeyDataset - src/data/data.py           #[m
+[31m-#--------------------------------------------------------#[m
+[31m-[m
+[31m-# dataset from Hugging Face Hub in format 'username/dataset_name'[m
+[31m-DATA = 'SouthernCrossAI/Tweets_cricket'[m
+[31m-# dataset column that contains text to use, check on Hugging Face to find column name[m
+[31m-COLUMN_NAME = 'tweet'[m
+[31m-[m
+[31m-[m
+[31m-#--------------------------------------------------------#[m
+[31m-#                      Dataset Setup                     #[m
+[31m-#           BabyJoeyDataset - src/data/data.py           #[m
+[31m-#--------------------------------------------------------#[m
+[31m-[m
+[31m-# local path to load/store tokenised training set, default to 'dataset_name_train.py'[m
+[31m-TRAIN_FILE = f'{DATA.split('/')[-1]}_train.pt'[m
+[31m-# local path to load/store tokenised validation set, default to 'dataset_name_valid.py'[m
+[31m-VALID_FILE = f'{DATA.split('/')[-1]}_valid.pt'[m
+[31m-# percentage of dataset out of whole dataset, set to 1 for using whole dataset[m
+[31m-SAMPLE_RATIO = 1[m
+[31m-# percentage of validation set out of (sampled) dataset, 1 - SPLIT_RATIO for training set[m
+[31m-SPLIT_RATIO = 0.2[m
+[31m-[m
+[31m-[m
+[31m-#--------------------------------------------------------#[m
+[31m-#                    Dataloader Setup                    #[m
+[31m-#         BabyJoeyDataLoader - src/data/data.py          #[m
+[31m-#--------------------------------------------------------#[m
+[31m-[m
+[31m-# batch size for training and validation dataloaders[m
+[31m-BATCH_SIZE = 2[m
+[31m-[m
+[31m-[m
+[31m-#--------------------------------------------------------#[m
+[31m-#              Optimisation Hyperparameters              #[m
+[31m-#           BabyJoeyUnit - src/train/train.py            #[m
+[31m-#--------------------------------------------------------#[m
+[31m-[m
+[31m-# learning rate for AdamW optimizer # TODO: can users change to different optimisers?[m
+[31m-LEARNING_RATE = 1e-5[m
+[31m-# weight decay for AdamW optimizer[m
+[31m-WEIGHT_DECAY = 1e-3[m
+[31m-# period of learning rate decay for StepLR scheduler # TODO: can users change to different schedulers?[m
+[31m-STEP_SIZE = 1[m
+[31m-# multiplicative factor of learning rate decay for StepLR scheduler[m
+[31m-GAMMA = 0.9[m
+[31m-[m
+[31m-[m
+[31m-#--------------------------------------------------------#[m
+[31m-#                   GPT-2 References                     #[m
+[31m-#--------------------------------------------------------#[m
+[31m-[m
+[31m-"""[m
+[31m-GPT-2 Small[m
+[31m-- Hidden Size (C): 768 dimensions[m
+[31m-- Sequence Length (T): 1024 tokens[m
+[31m-- Attention Heads: 12 heads[m
+[31m-- Decoder Layers: 12 layers[m
+[31m-- Feed-Forward Network Size (4C): 3072 neurons[m
+[31m-- Total Parameters: 117 M[m
+[31m-"""[m
+[31m-# N_EMBD = 768[m
+[31m-# SEQUENCE_LENGTH = 1024[m
+[31m-# N_HEAD = 12[m
+[31m-# N_LAYER_DECODER = 12[m
+[31m-[m
+[31m-""" [m
+[31m-GPT-2 Medium[m
+[31m-- Hidden Size (C): 1024 dimensions[m
+[31m-- Sequence Length (T): 1024 tokens[m
+[31m-- Attention Heads: 16 heads[m
+[31m-- Decoder Layers: 24 layers[m
+[31m-- Feed-Forward Network Size (4C): 4096 neurons[m
+[31m-- Total Parameters: 345 M[m
+[31m-"""[m
+[31m-# N_EMBD = 1024[m
+[31m-# SEQUENCE_LENGTH = 1024[m
+[31m-# N_HEAD = 16[m
+[31m-# N_LAYER_DECODER = 24[m
+[31m-[m
+[31m-"""[m
+[31m-GPT-2 Large[m
+[31m-- Hidden Size (C): 1280 dimensions[m
+[31m-- Sequence Length (T): 1024 tokens[m
+[31m-- Attention Heads: 20 heads[m
+[31m-- Decoder Layers: 36 layers[m
+[31m-- Feed-Forward Network Size (4C): 5120 neurons[m
+[31m-- Total Parameters: 762 M[m
+[31m-"""[m
+[31m-# N_EMBD = 1280[m
+[31m-# SEQUENCE_LENGTH = 1024[m
+[31m-# N_HEAD = 20[m
+[31m-# N_LAYER_DECODER = 36[m
+[31m-[m
+[31m-"""[m
+[31m-GPT-2 Extra-Large[m
+[31m-- Hidden Size (C): 1600 dimensions[m
+[31m-- Sequence Length (T): 1024 tokens[m
+[31m-- Attention Heads: 25 heads[m
+[31m-- Decoder Layers: 48 layers[m
+[31m-- Feed-forward Network Size (4C): 6400 neurons[m
+[31m-- Total Parameters: 1.5 B[m
+[31m-"""[m
+[31m-# N_EMBD = 1600[m
+[31m-# SEQUENCE_LENGTH = 1024[m
+[31m-# N_HEAD = 25[m
+[31m-# N_LAYER_DECODER = 48[m
