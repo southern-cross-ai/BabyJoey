@@ -71,8 +71,8 @@ class BabyJoeyDataset:
         # Load tokenised datasets from local files if they are existed
         if os.path.exists(self.train_file) and os.path.exists(self.valid_file):
             print(f"Loading tokenised training set from `{self.train_file}`, tokenised validation set from `{self.valid_file}`...")
-            training_dataset = torch.load(self.train_file)
-            validation_dataset = torch.load(self.valid_file)
+            training_dataset = torch.load(self.train_file, weights_only=False)
+            validation_dataset = torch.load(self.valid_file, weights_only=False)
             print(f"Training set has {len(training_dataset)} data, validation set has {len(validation_dataset)} data")
         else:
             print(f"Downloading dataset from `{self.data_path}`...")
