@@ -1,56 +1,72 @@
-# Dataset Settings
-TRAIN_FILE = 'training_dataset.pt'    # file path for training set
-VALID_FILE = 'validation_dataset.pt'  # file path for validation set
-DATA = "SouthernCrossAI/Tweets_cricket"  # format: hf_namespace/dataset_name
-BATCH_SIZE = 2  # batch size for BabyJoeyDataLoader in dataloader.py
+from dataclasses import dataclass, field
+from hydra.core.config_store import ConfigStore
+import torch
+from src.callbacks import Log
 
-# Model Configurations
-VOCAB_SIZE = 50257      # Unique Tokens
-SEQUENCE_LENGTH = 512   # Sequence Length (T)
-N_EMBD = 512            # Hidden Size (C)
-N_HEAD = 8              # Attention Heads
-N_LAYER_DECODER = 1     # Decoder Layers
-# TODO: current Feed-Forward Network Size is hard-encoded as 4 * N_EMBD in model.py
+# EmbeddingConfig for token embedding
+@dataclass
+class EmbeddingConfig:
+    vocab_size: int = 50257
+    sequence_length: int = 512
+    n_embd: int = 512
 
-# SGD Optimiser Hyperparameters
-LEARNING_RATE = 1e-5
-WEIGHT_DECAY = 1e-3
-STEP_SIZE = 1
-GAMMA = 0.9
+# TransformerConfig for transformer blocks
+@dataclass
+class TransformerConfig:
+    n_head: int = 8
+    n_layer_decoder: int = 1
 
-"""
-For the reference:
-    
-    GPT-2 Small
-	- Hidden Size (C): 768 dimensions
-	- Sequence Length (T): 1024 tokens
-    - Attention Heads: 12 heads
-    - Decoder Layers: 12 layers
-	- Feed-Forward Network Size (4C): 3072 neurons
-	- Total Parameters: 117 M
-    
-    GPT-2 Medium
-	- Hidden Size (C): 1024 dimensions
-	- Sequence Length (T): 1024 tokens
-    - Attention Heads: 16 heads
-    - Decoder Layers: 24 layers
-	- Feed-Forward Network Size (4C): 4096 neurons
-	- Total Parameters: 345 M
-    
-    GPT-2 Large
-	- Hidden Size (C): 1280 dimensions
-	- Sequence Length (T): 1024 tokens
-    - Attention Heads: 20 heads
-    - Decoder Layers: 36 layers
-	- Feed-Forward Network Size (4C): 5120 neurons
-	- Total Parameters: 762 M
+# ModelConfig for model hyperparameters
+@dataclass
+class ModelConfig:
+    learning_rate: float = 1e-5
+    weight_decay: float = 1e-3
+    step_size: int = 1
+    gamma: float = 0.9
 
-    GPT-2 Extra-Large
-    - Hidden Size (C): 1600 dimensions
-	- Sequence Length (T): 1024 tokens
-    - Attention Heads: 25 heads
-    - Decoder Layers: 48 layers
-	- Feed-forward Network Size (4C): 6400 neurons
-	- Total Parameters: 1.5 B
+# DataLoaderConfig for dataloader settings
+@dataclass
+class DataLoaderConfig:
+    batch_size: int = 2
 
-"""
+# OptimizationConfig for optimization hyperparameters
+@dataclass
+class OptimizationConfig:
+    learning_rate: float = 1e-5
+    weight_decay: float = 1e-3
+    step_size: int = 1
+    gamma: float = 0.9
+
+# DatasetConfig for dataset settings
+@dataclass
+class BabyJoeyDataConfig:
+    data_path: str = "SouthernCrossAI/Tweets_cricket"
+    sequence_length: int = 512
+    train_file: str = "train_data.pt"
+    valid_file: str = "valid_data.pt"
+    split_ratio: float = 0.2
+    column_name: str = "tweet"
+    sample_ratio: float = 0.1
+    seed: int = 42
+
+# Config for additional training parameters
+@dataclass
+class TrainingConfig:
+    max_epochs: int = 2
+    device: str = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+
+# BabyJoeyConfig for overall model configuration
+@dataclass
+class BabyJoeyConfig:
+    embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
+    transformer: TransformerConfig = field(default_factory=TransformerConfig)
+    model: ModelConfig = field(default_factory=ModelConfig)
+    data: BabyJoeyDataConfig = field(default_factory=BabyJoeyDataConfig)
+    dataloader: DataLoaderConfig = field(default_factory=DataLoaderConfig)
+    optimization: OptimizationConfig = field(default_factory=OptimizationConfig)
+    training: TrainingConfig = field(default_factory=TrainingConfig)
+
+# Register the configuration in Hydra's ConfigStore
+cs = ConfigStore.instance()
+cs.store(name="baby_joey_config", node=BabyJoeyConfig)

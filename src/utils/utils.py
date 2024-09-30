@@ -9,6 +9,7 @@ import torch.nn.functional as F
 from transformers import AutoTokenizer
 
 
+
 class BabyJoeyUtil:
     def __init__(self) -> None:
         pass
@@ -24,6 +25,7 @@ class BabyJoeyUtil:
             int: Total number of parameters
         """
         return int(sum(p.numel() for p in model.parameters() if p.requires_grad))
+
 
     def generate_text(model: nn.Module, tokenizer, input_text: str, 
                       max_length: int = 20, strategy: str = 'greedy', top_k: int = 10, 
@@ -79,3 +81,4 @@ class BabyJoeyUtil:
         # Decode the generated tokens to text
         generated_text = tokenizer.decode(generated_tokens[0], skip_special_tokens=True)
         return generated_text
+
