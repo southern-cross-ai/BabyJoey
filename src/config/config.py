@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from hydra.core.config_store import ConfigStore
 import torch
-from src.callbacks import Log
 
 # EmbeddingConfig for token embedding
 @dataclass
