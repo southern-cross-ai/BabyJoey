@@ -1,70 +1,95 @@
+from typing import Literal
 from dataclasses import dataclass, field
 from hydra.core.config_store import ConfigStore
+from networkx import from_nested_tuple
 import torch
+from torch.optim.optimizer import Optimizer
+from torch.optim.lr_scheduler import LRScheduler
 
-# EmbeddingConfig for token embedding
-@dataclass
-class EmbeddingConfig:
+
+# Embedding layer configs for token embedding and positional embedding
+@dataclass(frozen=True)
+class _EmbeddingConfig:
     vocab_size: int = 50257
     sequence_length: int = 512
     n_embd: int = 512
 
-# TransformerConfig for transformer blocks
-@dataclass
-class TransformerConfig:
+
+# Transformer layer configs for transformer blocks and their stacked structure
+@dataclass(frozen=True)
+class _TransformerConfig:
     n_head: int = 8
     n_layer_decoder: int = 1
+    n_embd: int = _EmbeddingConfig.n_embd
+    attn_mask = None
+    key_padding_mask = None
 
-# ModelConfig for model hyperparameters
-@dataclass
+
+# Model configs for embedding layer and transformer layer 
+@dataclass(frozen=True)
 class ModelConfig:
-    learning_rate: float = 1e-5
-    weight_decay: float = 1e-3
-    step_size: int = 1
-    gamma: float = 0.9
+    embedding: _EmbeddingConfig = _EmbeddingConfig()
+    transformer: _TransformerConfig = _TransformerConfig()
+    
 
 # DataLoaderConfig for dataloader settings
-@dataclass
+@dataclass(frozen=True)
 class DataLoaderConfig:
     batch_size: int = 2
 
+
 # OptimizationConfig for optimization hyperparameters
-@dataclass
-class OptimizationConfig:
+@dataclass(frozen=True)
+class _OptimizerConfig:
+    # TODO: Is there a better way for users to organise their optimiser configs?
+    # optimizer: Optimizer = torch.optim.adamw.AdamW
+    # gradient_accumulation_steps: int = 1  # number of batches to accumulate gradients for back propagation
     learning_rate: float = 1e-5
     weight_decay: float = 1e-3
+
+
+@dataclass(frozen=True)
+class _SchedulerConfig:
+    # TODO: Is there a better way for users to organise their lr_scheduler configs?
+    # scheduler: LRScheduler = torch.optim.lr_scheduler.StepLR
+    # step_lr_interval: Literal["step", "epoch"] = "epoch"  # time to step scheduler
     step_size: int = 1
     gamma: float = 0.9
 
+
+@dataclass(frozen=True)
+class OptimisationConfig:
+    optimizer: _OptimizerConfig = _OptimizerConfig()
+    scheduler: _SchedulerConfig = _SchedulerConfig()
+
+
 # DatasetConfig for dataset settings
-@dataclass
-class BabyJoeyDataConfig:
+@dataclass(frozen=True)
+class DataConfig:
     data_path: str = "SouthernCrossAI/Tweets_cricket"
+    column_name: str = "tweet"
     sequence_length: int = 512
     train_file: str = "train_data.pt"
     valid_file: str = "valid_data.pt"
     split_ratio: float = 0.2
-    column_name: str = "tweet"
-    sample_ratio: float = 0.1
-    seed: int = 42
+
 
 # Config for additional training parameters
-@dataclass
+@dataclass(frozen=True)
 class TrainingConfig:
-    max_epochs: int = 2
+    max_epochs: int = 1
     device: str = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
 # BabyJoeyConfig for overall model configuration
-@dataclass
-class BabyJoeyConfig:
-    embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
-    transformer: TransformerConfig = field(default_factory=TransformerConfig)
+@dataclass(frozen=True)
+class BabyJoeyConfig:    
     model: ModelConfig = field(default_factory=ModelConfig)
-    data: BabyJoeyDataConfig = field(default_factory=BabyJoeyDataConfig)
+    data: DataConfig = field(default_factory=DataConfig)
     dataloader: DataLoaderConfig = field(default_factory=DataLoaderConfig)
-    optimization: OptimizationConfig = field(default_factory=OptimizationConfig)
+    optimization: OptimisationConfig = field(default_factory=OptimisationConfig)
     training: TrainingConfig = field(default_factory=TrainingConfig)
+
 
 # Register the configuration in Hydra's ConfigStore
 cs = ConfigStore.instance()

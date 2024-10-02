@@ -1,29 +1,42 @@
-from typing import List, Optional, Tuple, TypeVar, Union
+from typing import List, Optional, Tuple, TypeVar, Union, Literal
 
 import torch
 import torch.distributed as dist
 import torch.nn as nn
-import torch.optim as optim
+from torch.optim.adamw import AdamW
+from torch.optim.optimizer import Optimizer
+from torch.optim.lr_scheduler import StepLR, LRScheduler
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torchtnt.framework.auto_unit import AutoUnit
 from torchtnt.framework.state import State
 from torchtnt.utils import TLRScheduler
+from torchtnt.utils.prepare_module import Strategy
 
 TData = TypeVar("TData")
 
 
 class BabyJoeyUnit(AutoUnit):
-    def __init__(self,
-                 module: nn.Module,
-                 device: Optional[torch.device] = None,
-                 lr: float = 1e-5,
-                 weight_decay: float = 1e-3,
-                 step_size: int = 1,
-                 gamma: float = 0.9,
-                 devices_ids: Union[List[torch.device], List[int]] = None,  # DDP
-                 output_device: Union[torch.device, int] = None,            # DDP
-                 rank: int = None                                           # DDP
-                 ) -> None:                                 
+    def __init__(
+        self,
+        *,                                      # users must pass following args as positional args
+        module: nn.Module,                      # model to trained/evaluate/predict
+        device: Optional[torch.device] = None,  # device to be used for training/evaluation/prediction
+        # TODO: Integrate lr, weight_decay and step_lr_interval into optimiser
+        # optimiser: Optimizer = AdamW,
+        # TODO: Integrate step_size, gamma, gradient_accumulation_steps into lr_scheduler
+        # lr_scheduler: LRScheduler = StepLR,
+        lr: float = 1e-5,
+        weight_decay: float = 1e-3,
+        step_size: int = 1,
+        gamma: float = 0.9,
+        # step_lr_interval: Literal["step", "epoch"] = "epoch",  # time to step scheduler
+        # gradient_accumulation_steps: int = 1,  # number of batches to accumulate gradients for back propagation
+        # TODO: Add DDP arg
+        # strategy: Optional[Union[Strategy, str]] = None,  # data parallelisation strategy
+        # devices_ids: Union[List[torch.device], List[int]] = None,  # DDP
+        # output_device: Union[torch.device, int] = None,            # DDP
+        # rank: int = None                                           # DDP
+    ) -> None:                                 
         """Customised AutoUnit class for BabyJoey
 
         Args:
@@ -37,13 +50,14 @@ class BabyJoeyUnit(AutoUnit):
         """
         
         super().__init__(module=module, device=device)
+        self.loss_fn = nn.CrossEntropyLoss()  # TODO: Allow user to specify loss function?
+        
         self.device = device
         self.module = module
         self.lr = lr
         self.weight_decay = weight_decay
         self.step_size = step_size
         self.gamma = gamma
-        self.loss_fn = nn.CrossEntropyLoss()  # TODO: Allow user to specify loss function?
         
         # # Check if distributed training is enabled and wrap the module with DDP
         # if torch.distributed.is_initialized():
@@ -66,15 +80,17 @@ class BabyJoeyUnit(AutoUnit):
         Returns:
             Tuple[torch.Tensor, torch.Tensor]: Tuple containing the loss and the output of the model
         """
+        
         input_ids, attention_mask = data['input_ids'], data['attention_mask']
         key_padding_mask = (attention_mask == 0).bool()
-        logits = self.module(input_ids, key_padding_mask=key_padding_mask)
+        logits = self.module(input_ids, attn_mask=None, key_padding_mask=key_padding_mask)
         targets = input_ids[:, 1:].contiguous()
         logits = logits[:, :-1, :].contiguous()
         loss = self.loss_fn(logits.view(-1, logits.size(-1)), targets.view(-1))
+
         return loss, logits
 
-    def configure_optimizers_and_lr_scheduler(self, module: nn.Module) -> Tuple[torch.optim.Optimizer, Optional[TLRScheduler]]:
+    def configure_optimizers_and_lr_scheduler(self, module: nn.Module) -> Tuple[Optimizer, LRScheduler]:
         """Implement this with optimizer and learning rate scheduler construction code. This will be called upon initialization of the AutoUnit.
 
         Args:
@@ -83,6 +99,8 @@ class BabyJoeyUnit(AutoUnit):
         Returns:
             Tuple[torch.optim.Optimizer, Optional[TLRScheduler]]: A tuple containing optimizer and optionally the learning rate scheduler
         """
-        optimizer = optim.AdamW(module.parameters(), lr=self.lr, weight_decay=self.weight_decay)
+        
+        optimizer = AdamW(module.parameters(), lr=self.lr, weight_decay=self.weight_decay)
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=self.step_size, gamma=self.gamma)
+        
         return optimizer, scheduler

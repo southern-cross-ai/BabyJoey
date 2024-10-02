@@ -6,10 +6,18 @@
 - [ ] Validate that the dataset column `tweet` is used correctly during tokenization.
 - [ ] Extend the configuration to support multiple datasets.
 - [ ] Update the `ConfigStore` to allow runtime changes to model configuration.
+- [ ] Add explanations of `dataclass` and `field` in this `README.md`.
+
+
+> [!NOTE]
+> To use `dataclass` and `field` for configuration classes in `src/config/config.py`, make sure `python>=3.7`.
 
 ## Overview
 
-BabyJoey is a model based on GPT-like transformers with a focus on tweet data from the Hugging Face dataset. This repository contains the model structure, configurations, and training setup required to train the BabyJoey model.
+[BabyJoey](https://github.com/southern-cross-ai/BabyJoey) is a [Generative Pre-Trained Transformer (GPT)](https://en.wikipedia.org/wiki/Generative_pre-trained_transformer) model based on [transformers](https://en.wikipedia.org/wiki/Attention_Is_All_You_Need), with a focus on Australian datasets to prioritise Australian culture and value.
+
+[`config.py`](./config.py) serves as a recipe where users can customise their configurations of **datasets**, **dataloaders**, **model structures**, **optimisers**, **schedulers** and other critical parameters for training a BabyJoey.
+
 
 ## Model Structure
 

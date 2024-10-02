@@ -2,33 +2,38 @@ import os
 from typing import Tuple
 
 import torch
+import torch.utils
 from torch.utils.data import DataLoader
 from datasets import Dataset, DatasetDict, load_dataset
+import torch.utils.data
 from transformers import BatchEncoding, GPT2Tokenizer
 
 from src.utils import BabyJoeyUtil
-from src.config import BabyJoeyConfig 
+from src.config.config import DataConfig, DataLoaderConfig
+
 
 class BabyJoeyDataset:
-    def __init__(self, cfg: BabyJoeyConfig) -> None:
+    def __init__(self, config: DataConfig) -> None:
         r"""Initialise a dataset class for BabyJoey using configuration.
 
         Args:
-            cfg (BabyJoeyConfig): Configuration object containing dataset parameters.
+            config (BabyJoeyConfig): Configuration object containing dataset parameters.
         """
-        self.data_path = cfg.data.data_path
-        self.sequence_length = cfg.data.sequence_length
-        self.train_file = cfg.data.train_file
-        self.valid_file = cfg.data.valid_file
-        self.split_ratio = cfg.data.split_ratio
-        self.sample_ratio = cfg.data.sample_ratio
-        self.column_name = cfg.data.column_name
+
+        self.data_path = config.data_path
+        self.sequence_length = config.sequence_length
+        self.train_file = config.train_file
+        self.valid_file = config.valid_file
+        self.split_ratio = config.split_ratio
+        self.column_name = config.column_name
 
         # Tokenizer setup
+        # TODO: Hard-coded tokenizer. Should allow users to customise their tokenizers.
+        # TODO: Load tokenizer from config.py
         self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2', clean_up_tokenization_spaces=True)
         self.tokenizer.pad_token = self.tokenizer.eos_token
-
-    def tokenize_function(self, dataset: DatasetDict) -> BatchEncoding:
+        
+    def _tokenize_function(self, dataset: DatasetDict) -> BatchEncoding:
         r"""Tokenise a dataset. Truncate input sequence if it's longer than `sequence_length`.
 
         Args:
@@ -45,7 +50,7 @@ class BabyJoeyDataset:
             return_attention_mask=True
         )
 
-    def load_or_create_datasets(self) -> Tuple[Dataset, Dataset]:
+    def get_datasets(self) -> Tuple[Dataset, Dataset]:
         r"""Load tokenised datasets from Hugging Face if they are not existed. Otherwise, load from local files.
 
         Returns:
@@ -54,8 +59,8 @@ class BabyJoeyDataset:
         # Load tokenised datasets from local files if they exist
         if os.path.exists(self.train_file) and os.path.exists(self.valid_file):
             # print(f"Loading tokenised training set from `{self.train_file}`, tokenised validation set from `{self.valid_file}`...")
-            training_dataset = torch.load(self.train_file, weights_only=False)
-            validation_dataset = torch.load(self.valid_file, weights_only=False)
+            train_dataset = torch.load(self.train_file, weights_only=False)
+            val_dataset = torch.load(self.valid_file, weights_only=False)
             # print(f"Training set has {len(training_dataset)} data, validation set has {len(validation_dataset)} data")
         else:
             # print(f"Downloading dataset from `{self.data_path}`...")
@@ -69,23 +74,24 @@ class BabyJoeyDataset:
 
             # Tokenise datasets
             # print("Tokenising training and validation sets...")
-            training_dataset = dataset['train'].map(self.tokenize_function, batched=True)
-            validation_dataset = dataset['test'].map(self.tokenize_function, batched=True)
+            train_dataset = dataset['train'].map(self._tokenize_function, batched=True)
+            val_dataset = dataset['test'].map(self._tokenize_function, batched=True)
 
             # Set format for attention
-            training_dataset.set_format(type='torch', columns=['input_ids', 'attention_mask'])
-            validation_dataset.set_format(type='torch', columns=['input_ids', 'attention_mask'])
+            train_dataset.set_format(type='torch', columns=['input_ids', 'attention_mask'])
+            val_dataset.set_format(type='torch', columns=['input_ids', 'attention_mask'])
 
             # Save tokenised datasets to local paths
-            torch.save(training_dataset, self.train_file)
-            torch.save(validation_dataset, self.valid_file)
+            torch.save(train_dataset, self.train_file)
+            torch.save(val_dataset, self.valid_file)
             # print(f"Saved tokenised training set at `{self.train_file}`, tokenised validation set at `{self.valid_file}`")
 
-        return training_dataset, validation_dataset
+        return train_dataset, val_dataset
+        
 
 
 class BabyJoeyDataLoader:
-    def __init__(self, cfg: BabyJoeyConfig, training_dataset: Dataset, validation_dataset: Dataset):
+    def __init__(self, config: DataLoaderConfig):
         r"""Initialise dataloaders for training and validation sets using configuration.
 
         Args:
@@ -93,12 +99,12 @@ class BabyJoeyDataLoader:
             training_dataset (Dataset): Training dataset to use.
             validation_dataset (Dataset): Validation dataset to use.
         """
-        self.training_dataset = training_dataset
-        self.validation_dataset = validation_dataset
-        self.batch_size = cfg.dataloader.batch_size
+        self.batch_size = config.batch_size
 
-    def get_dataloaders(self):
+    def get_dataloaders(self, train_dataset, val_dataset) -> Tuple[DataLoader, DataLoader]:
         """Create dataloaders for training and validation datasets."""
-        train_loader = torch.utils.data.DataLoader(self.training_dataset, batch_size=self.batch_size, shuffle=True)
-        val_loader = torch.utils.data.DataLoader(self.validation_dataset, batch_size=self.batch_size)
+        
+        train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
+        val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False)
+        
         return train_loader, val_loader
