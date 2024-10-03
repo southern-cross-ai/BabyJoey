@@ -49,7 +49,7 @@ class OptimizationConfig:
 # DatasetConfig for dataset settings
 @dataclass
 class BabyJoeyDataConfig:
-    data_path: str = "SouthernCrossAI/Tweets_cricket"
+    data_path: str = "SouthernCrossAI/Project_Gutenberg_Australia"
     sequence_length: int = 512
     train_file: str = "train_data.pt"
     valid_file: str = "valid_data.pt"
