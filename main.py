@@ -1,21 +1,13 @@
 import logging
-
-# Set the logging level to WARNING or higher to suppress INFO logs from TorchTNT
-logging.getLogger("torchtnt").setLevel(logging.WARNING)
-
-
-# Make sure you install the required packages >>> pip install -r requirements.txt
 import torch
-from torchtnt.framework.fit import fit
-from torchtnt.framework.callbacks import TQDMProgressBar
-
+import deepspeed
 import hydra
-
 from src.data import BabyJoeyDataLoader, BabyJoeyDataset
 from src.model import BabyJoeyModel
 from src.train import BabyJoeyUnit
 from src.utils import BabyJoeyUtil
 from src.config.config import BabyJoeyConfig
+
 
 @hydra.main(version_base=None, config_name="baby_joey_config")
 def main(cfg: BabyJoeyConfig):
@@ -25,32 +17,36 @@ def main(cfg: BabyJoeyConfig):
 
     # Dataloader setup
     dataloader = BabyJoeyDataLoader(cfg, training_dataset, validation_dataset)
-    training_dataloader, validation_dataloader = dataloader.get_dataloaders()
+    training_dataloader, validation_dataloader = dataloader.get_dataloaders(distributed=False)
 
     # Model setup
     device = torch.device(cfg.training.device)
-    model = BabyJoeyModel(cfg).to(device)
+    model = BabyJoeyModel(cfg)  # No need to move to device here; DeepSpeed will handle this
     n_params = BabyJoeyUtil.count_params(model)
-    print(f"Model initialized on {device} with {n_params} parameters")
+    print(f"Model initialized with {n_params} parameters")
 
-    # Training logic setup
+    # Initialize BabyJoeyUnit with DeepSpeed
     baby_joey_unit = BabyJoeyUnit(
         module=model,
         device=device,
         lr=cfg.optimization.learning_rate,
         weight_decay=cfg.optimization.weight_decay,
         step_size=cfg.optimization.step_size,
-        gamma=cfg.optimization.gamma
+        gamma=cfg.optimization.gamma,
+        use_fp16=cfg.deepspeed.fp16  # Enable FP16 if configured
     )
 
     # Training loop
-    fit(
-        baby_joey_unit,
-        train_dataloader=training_dataloader,
-        eval_dataloader=validation_dataloader,
-        max_epochs=cfg.training.max_epochs,
-        callbacks=[TQDMProgressBar()]
-    )
+    for epoch in range(cfg.training.max_epochs):
+        model.train()  # Set model to training mode
+        for step, batch in enumerate(training_dataloader):
+            baby_joey_unit.train_step(batch)
+
+        # Optionally evaluate at the end of each epoch
+        model.eval()  # Set model to evaluation mode
+        with torch.no_grad():
+            for step, batch in enumerate(validation_dataloader):
+                baby_joey_unit.compute_loss(None, batch)  # Only computing loss for evaluation
 
 if __name__ == "__main__":
     main()

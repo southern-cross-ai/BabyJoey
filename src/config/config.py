@@ -1,6 +1,16 @@
 from dataclasses import dataclass, field
 from hydra.core.config_store import ConfigStore
 import torch
+import deepspeed  # Import DeepSpeed
+
+# Add DeepSpeedConfig for DeepSpeed settings
+@dataclass
+class DeepSpeedConfig:
+    enabled: bool = True  # Enable DeepSpeed
+    zero_optimization: bool = True  # Enable ZeRO optimization
+    zero_stage: int = 2  # ZeRO optimization stage
+    fp16: bool = True  # Enable FP16 training
+    offload_optimizer: bool = False  # Optionally offload optimizer to CPU
 
 # EmbeddingConfig for token embedding
 @dataclass
@@ -54,8 +64,7 @@ class TrainingConfig:
     max_epochs: int = 2
     device: str = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-
-# BabyJoeyConfig for overall model configuration
+# BabyJoeyConfig for overall model configuration, including DeepSpeed
 @dataclass
 class BabyJoeyConfig:
     embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
@@ -65,6 +74,7 @@ class BabyJoeyConfig:
     dataloader: DataLoaderConfig = field(default_factory=DataLoaderConfig)
     optimization: OptimizationConfig = field(default_factory=OptimizationConfig)
     training: TrainingConfig = field(default_factory=TrainingConfig)
+    deepspeed: DeepSpeedConfig = field(default_factory=DeepSpeedConfig)  # Add DeepSpeed config here
 
 # Register the configuration in Hydra's ConfigStore
 cs = ConfigStore.instance()

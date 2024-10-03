@@ -2,12 +2,12 @@ import os
 from typing import Tuple
 
 import torch
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, DistributedSampler
 from datasets import Dataset, DatasetDict, load_dataset
 from transformers import BatchEncoding, GPT2Tokenizer
 
 from src.utils import BabyJoeyUtil
-from src.config import BabyJoeyConfig 
+from src.config import BabyJoeyConfig
 
 class BabyJoeyDataset:
     def __init__(self, cfg: BabyJoeyConfig) -> None:
@@ -53,22 +53,13 @@ class BabyJoeyDataset:
         """
         # Load tokenised datasets from local files if they exist
         if os.path.exists(self.train_file) and os.path.exists(self.valid_file):
-            # print(f"Loading tokenised training set from `{self.train_file}`, tokenised validation set from `{self.valid_file}`...")
             training_dataset = torch.load(self.train_file, weights_only=False)
             validation_dataset = torch.load(self.valid_file, weights_only=False)
-            # print(f"Training set has {len(training_dataset)} data, validation set has {len(validation_dataset)} data")
         else:
-            # print(f"Downloading dataset from `{self.data_path}`...")
             dataset = load_dataset(self.data_path)['train']
-            # print("Finished downloading dataset from Hugging Face")
-
-            # Split dataset into training and validation sets
-            # print(f"Splitting dataset with split ratio of {self.split_ratio}...")
             dataset = dataset.train_test_split(test_size=self.split_ratio)
-            # print(f"Training set has {len(dataset['train'])} data, validation set has {len(dataset['test'])} data")
 
             # Tokenise datasets
-            # print("Tokenising training and validation sets...")
             training_dataset = dataset['train'].map(self.tokenize_function, batched=True)
             validation_dataset = dataset['test'].map(self.tokenize_function, batched=True)
 
@@ -79,7 +70,6 @@ class BabyJoeyDataset:
             # Save tokenised datasets to local paths
             torch.save(training_dataset, self.train_file)
             torch.save(validation_dataset, self.valid_file)
-            # print(f"Saved tokenised training set at `{self.train_file}`, tokenised validation set at `{self.valid_file}`")
 
         return training_dataset, validation_dataset
 
@@ -97,8 +87,16 @@ class BabyJoeyDataLoader:
         self.validation_dataset = validation_dataset
         self.batch_size = cfg.dataloader.batch_size
 
-    def get_dataloaders(self):
-        """Create dataloaders for training and validation datasets."""
-        train_loader = torch.utils.data.DataLoader(self.training_dataset, batch_size=self.batch_size, shuffle=True)
-        val_loader = torch.utils.data.DataLoader(self.validation_dataset, batch_size=self.batch_size)
+    def get_dataloaders(self, distributed: bool = False):
+        """Create dataloaders for training and validation datasets, with optional distributed mode."""
+        if distributed:
+            train_sampler = DistributedSampler(self.training_dataset)
+            val_sampler = DistributedSampler(self.validation_dataset)
+        else:
+            train_sampler = None
+            val_sampler = None
+
+        train_loader = DataLoader(self.training_dataset, batch_size=self.batch_size, shuffle=(train_sampler is None), sampler=train_sampler)
+        val_loader = DataLoader(self.validation_dataset, batch_size=self.batch_size, sampler=val_sampler)
+
         return train_loader, val_loader
