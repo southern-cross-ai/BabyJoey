@@ -1,5 +1,6 @@
 import logging
 import torch
+import time
 import deepspeed
 import hydra
 from src.data import BabyJoeyDataLoader, BabyJoeyDataset
@@ -37,6 +38,9 @@ def main(cfg: BabyJoeyConfig):
         checkpoint_dir='src/checkpoint'  # Directory for saving checkpoints
     )
 
+    # Track the training time
+    start_time = time.time()
+
     # Training loop
     for epoch in range(cfg.training.max_epochs):
         model.train()  # Set model to training mode
@@ -57,6 +61,18 @@ def main(cfg: BabyJoeyConfig):
         with torch.no_grad():
             for step, batch in enumerate(validation_dataloader):
                 baby_joey_unit.compute_loss(None, batch)  # Only computing loss for evaluation
+
+    # Calculate total training time
+    end_time = time.time()
+    total_training_time = end_time - start_time
+
+    # Output final results
+    print(f"\nTraining completed!")
+    print(f"Total epochs: {cfg.training.max_epochs}")
+    print(f"Final average training loss: {avg_loss:.4f}")
+    print(f"Total training time: {total_training_time:.2f} seconds")
+
+
 
 if __name__ == "__main__":
     main()
