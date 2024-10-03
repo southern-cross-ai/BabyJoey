@@ -57,7 +57,7 @@ def main():
     cfg = compose(config_name="baby_joey_config")
 
     # Create the evaluator object
-    checkpoint_dir = './checkpoints'  # Define the directory where checkpoints are saved
+    checkpoint_dir = './checkpoints/src/checkpoint'  # Define the directory where checkpoints are saved
     evaluator = BabyJoeyEvaluator(cfg, checkpoint_dir)
 
     # Define the Gradio interface
@@ -71,7 +71,7 @@ def main():
         outputs="text",
         title="BabyJoey Model Inference",
         description="Enter a text and see the model's response."
-    ).launch()
+    ).launch(share=True)
 
 
 if __name__ == "__main__":
