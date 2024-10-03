@@ -71,7 +71,8 @@ urllib3==2.2.3
 Werkzeug==3.0.4
 xxhash==3.5.0
 yarl==1.12.1
-
+mpi4py==4.0.0
+jedi==0.19.1
 # Added new packages based on request
 albumentations==1.4.15    # Requires numpy>=1.24.4
 jax==0.4.33               # Requires numpy>=1.24.4
