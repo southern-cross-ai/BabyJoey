@@ -24,7 +24,7 @@ multidict==6.1.0
 multiprocess==0.70.16
 mypy-extensions==1.0.0
 networkx==3.3
-numpy==2.1.1
+numpy==1.24.4
 nvidia-cublas-cu12==12.1.3.1
 nvidia-cuda-cupti-cu12==12.1.105
 nvidia-cuda-nvrtc-cu12==12.1.105
@@ -39,10 +39,10 @@ nvidia-nvjitlink-cu12==12.6.68
 nvidia-nvtx-cu12==12.1.105
 omegaconf==2.3.0
 packaging==24.1
-pandas==2.2.3
-protobuf==5.28.2
+pandas==2.2.2
+protobuf==3.20.3
 psutil==6.0.0
-pyarrow==17.0.0
+pyarrow==16.1.0
 pyparsing==3.1.4
 pyre-extensions==0.0.31
 python-dateutil==2.9.0.post0
@@ -56,11 +56,11 @@ setuptools==75.1.0
 six==1.16.0
 sympy==1.13.3
 tabulate==0.9.0
-tensorboard==2.18.0
+tensorboard==2.17.0
 tensorboard-data-server==0.7.2
 tokenizers==0.20.0
 torch==2.4.1
-deepspeed==0.10.2
+torchtnt==0.2.4
 tqdm==4.66.5
 transformers==4.45.0
 triton==3.0.0
@@ -71,3 +71,4 @@ urllib3==2.2.3
 Werkzeug==3.0.4
 xxhash==3.5.0
 yarl==1.12.1
+tensorflow==2.17.0  # TensorFlow 2.17.0

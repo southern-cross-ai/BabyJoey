@@ -40,6 +40,7 @@ class BabyJoeyUnit:
         self.step_size = step_size
         self.gamma = gamma
         self.loss_fn = nn.CrossEntropyLoss()  # Loss function
+        self.global_step = 0  # Track global step for logging
 
         # DeepSpeed configuration
         self.ds_config = {
@@ -99,6 +100,11 @@ class BabyJoeyUnit:
 
         # Step optimizer with DeepSpeed
         self.module_engine.step()
+
+        # Print loss every 100 steps
+        self.global_step += 1
+        if self.global_step % 100 == 0:
+            print(f"Step {self.global_step}, Loss: {loss.item()}")
 
     def configure_optimizers_and_lr_scheduler(self) -> Tuple[torch.optim.Optimizer, Optional[None]]:
         """DeepSpeed handles optimizer configuration internally"""

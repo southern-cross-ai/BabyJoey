@@ -39,8 +39,14 @@ def main(cfg: BabyJoeyConfig):
     # Training loop
     for epoch in range(cfg.training.max_epochs):
         model.train()  # Set model to training mode
+        total_loss = 0
         for step, batch in enumerate(training_dataloader):
             baby_joey_unit.train_step(batch)
+            loss, _ = baby_joey_unit.compute_loss(None, batch)
+            total_loss += loss.item()
+
+        avg_loss = total_loss / len(training_dataloader)
+        print(f"Epoch {epoch + 1}/{cfg.training.max_epochs}, Average Loss: {avg_loss}")
 
         # Optionally evaluate at the end of each epoch
         model.eval()  # Set model to evaluation mode
