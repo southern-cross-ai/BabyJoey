@@ -33,7 +33,8 @@ def main(cfg: BabyJoeyConfig):
         weight_decay=cfg.optimization.weight_decay,
         step_size=cfg.optimization.step_size,
         gamma=cfg.optimization.gamma,
-        use_fp16=cfg.deepspeed.fp16  # Enable FP16 if configured
+        use_fp16=cfg.deepspeed.fp16,  # Enable FP16 if configured
+        checkpoint_dir='src/checkpoint'  # Directory for saving checkpoints
     )
 
     # Training loop
@@ -47,6 +48,9 @@ def main(cfg: BabyJoeyConfig):
 
         avg_loss = total_loss / len(training_dataloader)
         print(f"Epoch {epoch + 1}/{cfg.training.max_epochs}, Average Loss: {avg_loss}")
+
+        # Save the best model based on the validation loss
+        baby_joey_unit.maybe_save_best_checkpoint(epoch + 1, avg_loss)
 
         # Optionally evaluate at the end of each epoch
         model.eval()  # Set model to evaluation mode

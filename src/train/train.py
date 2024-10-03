@@ -1,3 +1,5 @@
+import os
+
 import deepspeed
 import torch
 import torch.nn as nn
@@ -19,7 +21,8 @@ class BabyJoeyUnit:
                  devices_ids: Union[List[torch.device], List[int]] = None,  # DDP
                  output_device: Union[torch.device, int] = None,            # DDP
                  rank: int = None,                                         # DDP
-                 use_fp16: bool = True                                     # FP16 for DeepSpeed
+                 use_fp16: bool = True,                                   # FP16 for DeepSpeed
+                 checkpoint_dir: str = 'src/checkpoint'
                  ) -> None:
         """Customised AutoUnit class for BabyJoey with DeepSpeed support
 
@@ -41,6 +44,8 @@ class BabyJoeyUnit:
         self.gamma = gamma
         self.loss_fn = nn.CrossEntropyLoss()  # Loss function
         self.global_step = 0  # Track global step for logging
+        self.best_loss = float("inf")  # Initialize best loss as infinity
+        self.checkpoint_dir = checkpoint_dir # Checkpoint directory
 
         # DeepSpeed configuration
         self.ds_config = {
@@ -106,6 +111,28 @@ class BabyJoeyUnit:
         if self.global_step % 100 == 0:
             print(f"Step {self.global_step}, Loss: {loss.item()}")
 
+
     def configure_optimizers_and_lr_scheduler(self) -> Tuple[torch.optim.Optimizer, Optional[None]]:
         """DeepSpeed handles optimizer configuration internally"""
         return self.optimizer, None
+
+
+    def save_checkpoint(self, epoch: int, loss: float):
+        """Save the model checkpoint if it has the best loss."""
+        checkpoint_name = os.path.join(self.checkpoint_dir, "best_model_checkpoint")
+        self.module_engine.save_checkpoint(self.checkpoint_dir, checkpoint_name)
+        print(f"Checkpoint saved at {checkpoint_name}")
+
+
+    def maybe_save_best_checkpoint(self, epoch: int, loss: float):
+        """Save checkpoint only if the loss is better than the best_loss."""
+        if loss < self.best_loss:
+            self.best_loss = loss
+            self.save_checkpoint(epoch, loss)
+
+
+    def load_checkpoint(self, checkpoint_name: str):
+        """Load a specific checkpoint for inference."""
+        _, client_state = self.module_engine.load_checkpoint(self.checkpoint_dir, checkpoint_name)
+        print(f"Loaded checkpoint {checkpoint_name}")
+        return client_state
