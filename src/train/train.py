@@ -21,9 +21,8 @@ class BabyJoeyUnit(AutoUnit):
         *,                                      # users must pass following args as positional args
         module: nn.Module,                      # model to trained/evaluate/predict
         device: Optional[torch.device] = None,  # device to be used for training/evaluation/prediction
-        # TODO: Integrate lr, weight_decay and step_lr_interval into optimiser
+        # TODO: customisable optimiser and scheduler
         # optimiser: Optimizer = AdamW,
-        # TODO: Integrate step_size, gamma, gradient_accumulation_steps into lr_scheduler
         # lr_scheduler: LRScheduler = StepLR,
         lr: float = 1e-5,
         weight_decay: float = 1e-3,
@@ -31,7 +30,7 @@ class BabyJoeyUnit(AutoUnit):
         gamma: float = 0.9,
         # step_lr_interval: Literal["step", "epoch"] = "epoch",  # time to step scheduler
         # gradient_accumulation_steps: int = 1,  # number of batches to accumulate gradients for back propagation
-        # TODO: Add DDP arg
+        # TODO: DDP parameters
         # strategy: Optional[Union[Strategy, str]] = None,  # data parallelisation strategy
         # devices_ids: Union[List[torch.device], List[int]] = None,  # DDP
         # output_device: Union[torch.device, int] = None,            # DDP
@@ -100,6 +99,7 @@ class BabyJoeyUnit(AutoUnit):
             Tuple[torch.optim.Optimizer, Optional[TLRScheduler]]: A tuple containing optimizer and optionally the learning rate scheduler
         """
         
+        # TODO: Change them to customisable optimiser and scheduler
         optimizer = AdamW(module.parameters(), lr=self.lr, weight_decay=self.weight_decay)
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=self.step_size, gamma=self.gamma)
         

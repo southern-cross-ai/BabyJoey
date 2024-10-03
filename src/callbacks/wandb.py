@@ -1,66 +1,148 @@
+import torch
+import wandb
+from wandb.errors import AuthenticationError, UsageError
 from torchtnt.framework.callback import Callback
+from torchtnt.framework.state import State
+from torchtnt.framework.unit import TEvalUnit, TPredictUnit, TTrainUnit
+
+from src.config.config import WandBConfig
+
+# FIXME: Accuracy is not working
+# FIXME: Process bar has issues. See the PR on pytorch/tnt created by Matty.
+# TODO: Current WandB will generate logs in terminal. Maybe changing logger to suppress some? Some info is helpful tho.
 
 class WandB(Callback):
+    def __init__(self, config: WandBConfig) -> None:
+        # Login WandB thorough an API key
+        try:
+            wandb.login(key=config.api_key, relogin=True)
+        except AuthenticationError:
+            raise AuthenticationError("WandB API key fails verification with the server")
+        except UsageError:
+            raise UsageError("WandB API key cannot be configured and no tty")
+        # Initialise a project in WandB
+        wandb.init(
+            project=config.project_name,  # Project name
+            config={
+                "dataset": config.dataset,
+                "num_attention_head": config.num_attention_head,
+                "num_decoder_layer": config.num_decoder_layer,
+                "max_epochs": config.max_epochs,
+                "batch_size": config.batch_size,
+                "learning_rate": config.learning_rate,
+                "weight_decay": config.weight_decay,
+                "step_size": config.step_size,
+                "gamma": config.gamma
+            }
+        )
+        
     ######################## Training state #########################
-    def on_train_start(self, state, unit) -> None:
-        print("Training started!")
+    def on_train_start(self, state: State, unit: TTrainUnit) -> None:
+        pass
 
-    def on_train_epoch_start(self, state, unit) -> None:
-        print(f"Training epoch {unit.train_progress.num_epochs_completed} started!")
+    def on_train_epoch_start(self, state: State, unit: TTrainUnit) -> None:
+        self.train_epoch_loss = []
+        self.train_epoch_correct = 0
+        self.train_epoch_total = 0
 
-    def on_train_step_start(self, state, unit) -> None:
-        current_step = unit.train_progress.num_steps_completed
-        print(f"Training step {current_step} started.")
+    def on_train_step_start(self, state: State, unit: TTrainUnit) -> None:
+        pass
 
-    def on_train_step_end(self, state, unit) -> None:
+    def on_train_step_end(self, state: State, unit: TTrainUnit) -> None:
         if state.train_state and state.train_state.step_output:
             current_loss = state.train_state.step_output[0].item()  # Ensure step_output is valid
-            print(f"\rCurrent Loss: {current_loss:.6f}", end="")  # Update in the same line for valid loss
+            self.train_epoch_loss.append(current_loss)
+            wandb.log({"train_step_loss": current_loss})
+            # Assuming the step_output contains logits and labels (you may need to adjust this based on your actual model)
+            if len(state.train_state.step_output) > 2:
+                logits = state.train_state.step_output[1]
+                labels = state.train_state.step_output[2]
+                # Get the predicted token (highest probability from logits)
+                _, preds = torch.max(logits, dim=-1)
+                # Calculate correct predictions and total tokens
+                correct = torch.sum(preds == labels).item()
+                total = labels.numel()  # Total number of tokens
+                # Update epoch totals for accuracy
+                self.train_epoch_correct += correct
+                self.train_epoch_total += total
         else:
             # Print the "No valid loss" message on a new line
-            print("No valid loss available at this step.")
+            print("No valid loss available at this end of train step")
 
-    def on_train_epoch_end(self, state, unit) -> None:
-        print(f"Training epoch {unit.train_progress.num_epochs_completed} ended!")
+    def on_train_epoch_end(self, state: State, unit: TTrainUnit) -> None:
+        # Calculate and log average loss for the epoch
+        if self.train_epoch_loss:
+            avg_loss = sum(self.train_epoch_loss) / len(self.train_epoch_loss)
+        else:
+            avg_loss = None
+            print("No valid loss available at this end of train epoch")
+        wandb.log({"train_epoch_loss": avg_loss})
+        # Calculate and log accuracy for the epoch
+        if self.train_epoch_total > 0:
+            accuracy = (self.train_epoch_correct / self.train_epoch_total) * 100
+        else:
+            accuracy = None
+            print("No valid loss accuracy at this end of train epoch")
+        wandb.log({"train_epoch_acc": accuracy})
 
-    def on_train_end(self, state, unit) -> None:
-        print("Training ended!")
+    def on_train_end(self, state: State, unit: TTrainUnit) -> None:
+        # print("Training ended!")
+        pass
 
     ######################## Evaluation state #########################
-    def on_eval_start(self, state, unit) -> None:
-        print("Evaluation started!")
+    def on_eval_start(self, state: State, unit: TEvalUnit) -> None:
+        pass
 
-    def on_eval_epoch_start(self, state, unit) -> None:
-        print(f"Evaluation epoch {unit.eval_progress.num_epochs_completed} started!")
-    
-    def on_eval_step_start(self, state, unit) -> None:
-        # Log the start of an evaluation step
-        print(f"Evaluation batch {unit.eval_progress.num_steps_completed} started.")
-
-    def on_eval_step_end(self, state, unit) -> None:
-        # Log evaluation loss at the end of the step if available
-        if state.eval_state and state.eval_state.step_output:
-            val_loss = state.eval_state.step_output[0].item()  # Ensure step_output is valid
-            print(f"Evaluation Loss: {val_loss:.6f}")
+    def on_eval_epoch_start(self, state: State, unit: TEvalUnit) -> None:
+        self.eval_epoch_loss = []
+        self.eval_epoch_correct = 0
+        self.eval_epoch_total = 0
         
-            # Log validation loss to wandb
-            wandb.log({"val_loss": val_loss})
+    def on_eval_get_next_batch_end(self, state: State, unit: TEvalUnit) -> None:
+        pass
+    
+    def on_eval_step_start(self, state: State, unit: TEvalUnit) -> None:
+        pass
+
+    def on_eval_step_end(self, state: State, unit: TEvalUnit) -> None:
+        if state.eval_state and state.eval_state.step_output:
+            current_loss = state.eval_state.step_output[0].item()  # Ensure step_output is valid
+            self.eval_epoch_loss.append(current_loss)
+            wandb.log({"eval_step_loss": current_loss})
+            # Assuming the step_output contains logits and labels (you may need to adjust this based on your actual model)
+            if len(state.eval_state.step_output) > 2:
+                logits = state.eval_state.step_output[1]
+                labels = state.eval_state.step_output[2]
+                # Get the predicted token (highest probability from logits)
+                _, preds = torch.max(logits, dim=-1)
+                # Calculate correct predictions and total tokens
+                correct = torch.sum(preds == labels).item()
+                total = labels.numel()  # Total number of tokens
+                # Update epoch totals for accuracy
+                self.eval_epoch_correct += correct
+                self.eval_epoch_total += total
         else:
-            print("No valid evaluation loss available for this step.")
-
+            # Print the "No valid loss" message on a new line
+            print("No valid loss available at this end of eval step")
     
-    def on_eval_epoch_end(self, state, unit) -> None:
-        print(f"Evaluation epoch {unit.eval_progress.num_epochs_completed} ended!")    
+    def on_eval_epoch_end(self, state: State, unit: TEvalUnit) -> None:
+        # Calculate and log average loss for the epoch
+        if self.eval_epoch_loss:
+            avg_loss = sum(self.eval_epoch_loss) / len(self.eval_epoch_loss)
+        else:
+            avg_loss = None
+            print("No valid loss available at this end of eval epoch")
+        wandb.log({"eval_epoch_loss": avg_loss})
+        # Calculate and log accuracy for the epoch
+        if self.eval_epoch_total > 0:
+            accuracy = (self.eval_epoch_correct / self.eval_epoch_total) * 100
+        else:
+            accuracy = None
+            print("No valid loss accuracy at this end of eval epoch")
+        wandb.log({"eval_epoch_acc": accuracy})
     
-    def on_eval_end(self, state, unit) -> None:
-        print("Evaluation ended!")
-
-    ######################## Exception Handling #########################
-    def on_exception(self, state, unit, exc: BaseException) -> None:
-        print(f"Exception occurred: {exc}")
-
-
-
+    def on_eval_end(self, state: State, unit: TEvalUnit) -> None:
+        pass
 
 
 # ------------- TODO Items for BabyJoey -------------:

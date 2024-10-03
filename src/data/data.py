@@ -3,33 +3,32 @@ from typing import Tuple
 
 import torch
 import torch.utils
-from torch.utils.data import DataLoader
-from datasets import Dataset, DatasetDict, load_dataset
 import torch.utils.data
+from datasets import Dataset, DatasetDict, load_dataset
+from torch.utils.data import DataLoader
 from transformers import BatchEncoding, GPT2Tokenizer
 
-from src.utils import BabyJoeyUtil
 from src.config.config import DataConfig, DataLoaderConfig
+from src.utils import BabyJoeyUtil
 
 
 class BabyJoeyDataset:
     def __init__(self, config: DataConfig) -> None:
-        r"""Initialise a dataset class for BabyJoey using configuration.
+        r"""Initialise a dataset class for BabyJoey based on configurations defined in 
+            `src.config.config.DataConfig`.
 
         Args:
-            config (BabyJoeyConfig): Configuration object containing dataset parameters.
+            config (DataConfig): Data configurations defined in `src.config.config.DataConfig`
         """
 
         self.data_path = config.data_path
+        self.column_name = config.column_name
         self.sequence_length = config.sequence_length
         self.train_file = config.train_file
         self.valid_file = config.valid_file
         self.split_ratio = config.split_ratio
-        self.column_name = config.column_name
-
-        # Tokenizer setup
-        # TODO: Hard-coded tokenizer. Should allow users to customise their tokenizers.
-        # TODO: Load tokenizer from config.py
+        # TODO: Hard-coded tokenizer. Allow users to customise their own tokeniser.
+        # TODO: Consider to load tokenizer from config.py
         self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2', clean_up_tokenization_spaces=True)
         self.tokenizer.pad_token = self.tokenizer.eos_token
         
@@ -51,10 +50,10 @@ class BabyJoeyDataset:
         )
 
     def get_datasets(self) -> Tuple[Dataset, Dataset]:
-        r"""Load tokenised datasets from Hugging Face if they are not existed. Otherwise, load from local files.
+        r"""Load tokenised datasets. Download from Hugging Face if they don't exist at local.
 
         Returns:
-            Tuple[Dataset, Dataset]: Return the tokenised training set and validation set.
+            Tuple[Dataset, Dataset]: A tuple of tokenised training dataset and tokenised validation dataset.
         """
         # Load tokenised datasets from local files if they exist
         if os.path.exists(self.train_file) and os.path.exists(self.valid_file):
@@ -91,18 +90,25 @@ class BabyJoeyDataset:
 
 
 class BabyJoeyDataLoader:
-    def __init__(self, config: DataLoaderConfig):
-        r"""Initialise dataloaders for training and validation sets using configuration.
+    def __init__(self, config: DataLoaderConfig) -> None:
+        r"""Initialise a dataloader class for BabyJoey based on configurations defined in 
+            `src.config.config.DataLoaderConfig`.
 
         Args:
-            cfg (BabyJoeyConfig): Configuration object containing dataloader parameters.
-            training_dataset (Dataset): Training dataset to use.
-            validation_dataset (Dataset): Validation dataset to use.
+            config (DataLoaderConfig): Data configurations defined in `src.config.config.DataLoaderConfig`
         """
         self.batch_size = config.batch_size
 
-    def get_dataloaders(self, train_dataset, val_dataset) -> Tuple[DataLoader, DataLoader]:
-        """Create dataloaders for training and validation datasets."""
+    def get_dataloaders(self, train_dataset: Dataset, val_dataset: Dataset) -> Tuple[DataLoader, DataLoader]:
+        r"""Create dataloaders for training dataset and validation dataset.
+
+        Args:
+            train_dataset (Dataset): Tokenised training dataset
+            val_dataset (Dataset): Tokenised validation dataset
+
+        Returns:
+            Tuple[DataLoader, DataLoader]: A tuple of created training dataloader and validation dataloader
+        """
         
         train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
         val_loader = DataLoader(val_dataset, batch_size=self.batch_size, shuffle=False)
