@@ -7,7 +7,7 @@ logging.getLogger("torchtnt").setLevel(logging.WARNING)
 # Make sure you install the required packages >>> pip install -r requirements.txt
 import torch
 from torchtnt.framework.fit import fit
-from torchtnt.framework.callbacks import TQDMProgressBar
+from torchtnt.framework.callbacks import TQDMProgressBar, LearningRateMonitor
 
 import hydra
 
@@ -16,6 +16,7 @@ from src.model import BabyJoeyModel
 from src.train import BabyJoeyUnit
 from src.utils import BabyJoeyUtil
 from src.config.config import BabyJoeyConfig
+from src.callbacks import WandbLogger, Log
 
 @hydra.main(version_base=None, config_name="baby_joey_config")
 def main(cfg: BabyJoeyConfig):
@@ -49,7 +50,7 @@ def main(cfg: BabyJoeyConfig):
         train_dataloader=training_dataloader,
         eval_dataloader=validation_dataloader,
         max_epochs=cfg.training.max_epochs,
-        callbacks=[TQDMProgressBar()]
+        callbacks=[Log()]
     )
 
 if __name__ == "__main__":

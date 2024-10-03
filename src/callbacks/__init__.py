@@ -1,3 +1,3 @@
 from .log import Log
-from .wandb import WandB
+from .wandb import WandbLogger
 from .savehugging import SaveHugging
