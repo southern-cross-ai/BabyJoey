@@ -50,7 +50,7 @@ def main(cfg: BabyJoeyConfig):
         train_dataloader=training_dataloader,
         eval_dataloader=validation_dataloader,
         max_epochs=cfg.training.max_epochs,
-        callbacks=[Log()]
+        callbacks=[WandbLogger('testbaby')]
     )
 
 if __name__ == "__main__":
