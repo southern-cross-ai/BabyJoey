@@ -115,7 +115,7 @@ class TransformerBlock(nn.Module):
         attn_output = attn_output.transpose(0, 1)
         # 6. calculate attention residual
         # input and output shape (batch_size, sequence_length, n_embd)
-        x = x_copy + attn_output
+        x = self.ln1(x_copy) + attn_output
 
         ############# MLP #############
         # 1. keep a copy for calculating MLP residual
