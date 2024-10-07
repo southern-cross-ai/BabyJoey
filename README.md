@@ -11,6 +11,10 @@ Welcome to BabyJoey, a streamlined Australian language model designed for effici
 #### 📝 README.md
 Comprehensive documentation for the project, explaining the purpose, setup instructions, and usage of BabyJoey using deepspeed.
 
+The deepspeed is faster of 20s than the tnt version.
+
+More experiment to be done on clusters.
+
 ---
 
 ### 📝 README.md
