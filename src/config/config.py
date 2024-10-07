@@ -54,7 +54,7 @@ class BabyJoeyDataConfig:
     train_file: str = "train_data.pt"
     valid_file: str = "valid_data.pt"
     split_ratio: float = 0.2
-    column_name: str = "tweet"
+    column_name: str = "Paragraph"
     sample_ratio: float = 0.1
     seed: int = 42
 

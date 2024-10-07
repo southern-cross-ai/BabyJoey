@@ -9,19 +9,18 @@ Welcome to BabyJoey, a streamlined Australian language model designed for effici
 ### 📂 Project Root File Structure
 
 #### 📝 README.md
-Comprehensive documentation for the project, explaining the purpose, setup instructions, and usage of BabyJoey.
+Comprehensive documentation for the project, explaining the purpose, setup instructions, and usage of BabyJoey using deepspeed.
 
 ---
 
 ### 📝 README.md
 
 #### Purpose
-BabyJoey is a lightweight language model inspired by GPT-1, featuring 115 million parameters and designed for tasks that require a balance of efficiency and performance. It's perfect for educational purposes, research, and small-scale applications.
-
+This is the deepseed version for BabyJoey.
 #### Setup Instructions
 1. **Clone the Repository**:
     ```bash
-    git clone https://github.com/yourusername/babyjoey.git
+    git clone -b deepspeed https://github.com/southern-cross-ai/BabyJoey.git
     cd babyjoey
     ```
 2. **Install Dependencies**:
@@ -36,11 +35,11 @@ BabyJoey is a lightweight language model inspired by GPT-1, featuring 115 millio
 #### Usage
 - **Training the Model**:
     ```bash
-    bash scripts/train.sh
+    bash python main.py
     ```
 - **Evaluating the Model**:
     ```bash
-    bash scripts/evaluate.sh
+    bash python eval.py
     ```
 
 ---
