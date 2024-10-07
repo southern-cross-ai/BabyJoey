@@ -1,11 +1,16 @@
+import logging
+
+# Set the logging level to WARNING or higher to suppress INFO logs from TorchTNT
+logging.getLogger("torchtnt").setLevel(logging.WARNING)
+
+
 # Make sure you install the required packages >>> pip install -r requirements.txt
 import torch
 from torchtnt.framework.fit import fit
+from torchtnt.framework.callbacks import TQDMProgressBar
 
 import hydra
-from omegaconf import DictConfig
 
-from src.callbacks import Log
 from src.data import BabyJoeyDataLoader, BabyJoeyDataset
 from src.model import BabyJoeyModel
 from src.train import BabyJoeyUnit
@@ -15,12 +20,10 @@ from src.config.config import BabyJoeyConfig
 @hydra.main(version_base=None, config_name="baby_joey_config")
 def main(cfg: BabyJoeyConfig):
     # Dataset setup
-    print("Preparing training and validation datasets...")
     dataset = BabyJoeyDataset(cfg)
     training_dataset, validation_dataset = dataset.load_or_create_datasets()
 
     # Dataloader setup
-    print("Preparing dataloaders...")
     dataloader = BabyJoeyDataLoader(cfg, training_dataset, validation_dataset)
     training_dataloader, validation_dataloader = dataloader.get_dataloaders()
 
@@ -41,15 +44,13 @@ def main(cfg: BabyJoeyConfig):
     )
 
     # Training loop
-    print("Starting training...")
     fit(
         baby_joey_unit,
         train_dataloader=training_dataloader,
         eval_dataloader=validation_dataloader,
         max_epochs=cfg.training.max_epochs,
-        callbacks=[Log()]
+        callbacks=[TQDMProgressBar()]
     )
-    print("Training complete")
 
 if __name__ == "__main__":
     main()
