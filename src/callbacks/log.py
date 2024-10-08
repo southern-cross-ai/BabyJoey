@@ -27,12 +27,10 @@ class Log(Callback):
 
     ######################## Training state #########################
     def on_train_start(self, state, unit) -> None:
-        print("Training started!\n")
-        # logging.info("Training started!")
+        logging.info("Training started!")
 
     def on_train_epoch_start(self, state, unit) -> None:
-        print(f"Epoch {unit.train_progress.num_epochs_completed}!")
-        # logging.info(f"Epoch {unit.train_progress.num_epochs_completed} started.")
+        logging.info(f"Epoch {unit.train_progress.num_epochs_completed} started.")
         self.epoch_losses = []  # Reset losses at the start of each epoch
         self.epoch_correct = 0  # Reset correct predictions
         self.epoch_total = 0    # Reset total predictions
@@ -81,13 +79,12 @@ class Log(Callback):
 
         # Log both average loss and accuracy at the end of the epoch, handling None values
         logging.info(f"Epoch {unit.train_progress.num_epochs_completed} ended. "
-                     f"{'Average Loss: ' + f'{avg_loss:.6f}' if avg_loss is not None else 'Average Loss: N/A'}, ")
-        
+                     f"{'Average Loss: ' + f'{avg_loss:.6f}' if avg_loss is not None else 'Average Loss: N/A'}, "
+                     f"{'Accuracy: ' + f'{accuracy:.2f}%' if accuracy is not None else 'Accuracy: N/A'}")
 
     ######################## Evaluation state #########################
     def on_eval_epoch_start(self, state, unit) -> None:
-        print(f"\n")
-        # logging.info(f"Evaluation epoch {unit.eval_progress.num_epochs_completed} started.")
+        logging.info(f"Evaluation epoch {unit.eval_progress.num_epochs_completed} started.")
         self.epoch_correct = 0  # Reset correct predictions for evaluation
         self.epoch_total = 0    # Reset total predictions for evaluation
 
@@ -117,7 +114,6 @@ class Log(Callback):
             
             print(f"\rEvaluation Accuracy: {self.epoch_correct / self.epoch_total * 100:.2f}%", end="", flush=True)
         else:
-            print("Warning: 'input_ids' not found in the step_input.")
             logging.warning("'input_ids' not found in the step_input.")
 
     def on_eval_end(self, state, unit) -> None:
@@ -132,5 +128,4 @@ class Log(Callback):
 
     ######################## Exception Handling #########################
     def on_exception(self, state, unit, exc: BaseException) -> None:
-        print(f"Exception occurred: {exc}")
         logging.error(f"Exception occurred: {exc}", exc_info=True)
