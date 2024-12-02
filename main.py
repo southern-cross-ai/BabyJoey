@@ -20,16 +20,16 @@ from src.config.config import BabyJoeyConfig
 @hydra.main(version_base=None, config_name="baby_joey_config")
 def main(cfg: BabyJoeyConfig):
     # Dataset setup
-    dataset = BabyJoeyDataset(cfg)
+    dataset = BabyJoeyDataset()
     training_dataset, validation_dataset = dataset.load_or_create_datasets()
 
     # Dataloader setup
-    dataloader = BabyJoeyDataLoader(cfg, training_dataset, validation_dataset)
+    dataloader = BabyJoeyDataLoader(training_dataset, validation_dataset)
     training_dataloader, validation_dataloader = dataloader.get_dataloaders()
 
     # Model setup
     device = torch.device(cfg.training.device)
-    model = BabyJoeyModel(cfg).to(device)
+    model = BabyJoeyModel(vocab_size = 50257, sequence_length = 512, n_embd= 512, n_head =1, n_layer_decoder = 1).to(device)
     n_params = BabyJoeyUtil.count_params(model)
     print(f"Model initialized on {device} with {n_params} parameters")
 

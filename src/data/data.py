@@ -1,42 +1,23 @@
 import os
-from typing import Tuple
-
 import torch
-from torch.utils.data import DataLoader
 from datasets import Dataset, DatasetDict, load_dataset
 from transformers import BatchEncoding, GPT2Tokenizer
 
-from src.utils import BabyJoeyUtil
-from src.config import BabyJoeyConfig 
-
 class BabyJoeyDataset:
-    def __init__(self, cfg: BabyJoeyConfig) -> None:
-        r"""Initialise a dataset class for BabyJoey using configuration.
-
-        Args:
-            cfg (BabyJoeyConfig): Configuration object containing dataset parameters.
-        """
-        self.data_path = cfg.data.data_path
-        self.sequence_length = cfg.data.sequence_length
-        self.train_file = cfg.data.train_file
-        self.valid_file = cfg.data.valid_file
-        self.split_ratio = cfg.data.split_ratio
-        self.sample_ratio = cfg.data.sample_ratio
-        self.column_name = cfg.data.column_name
+    def __init__(self) -> None:
+        self.data_path = str = "SouthernCrossAI/Tweets_cricket"
+        self.sequence_length = int = 512
+        self.train_file = str = "train_data.pt"
+        self.valid_file = str = "valid_data.pt"
+        self.split_ratio = float = 0.2
+        self.sample_ratio = float = 0.1
+        self.column_name = str = "tweet"
 
         # Tokenizer setup
         self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2', clean_up_tokenization_spaces=True)
         self.tokenizer.pad_token = self.tokenizer.eos_token
 
     def tokenize_function(self, dataset: DatasetDict) -> BatchEncoding:
-        r"""Tokenise a dataset. Truncate input sequence if it's longer than `sequence_length`.
-
-        Args:
-            dataset (DatasetDict): Input dataset to tokenise.
-
-        Returns:
-            BatchEncoding: Tokenised dataset.
-        """
         return self.tokenizer(
             dataset[self.column_name],
             truncation=True,
@@ -45,13 +26,7 @@ class BabyJoeyDataset:
             return_attention_mask=True
         )
 
-    def load_or_create_datasets(self) -> Tuple[Dataset, Dataset]:
-        r"""Load tokenised datasets from Hugging Face if they are not existed. Otherwise, load from local files.
-
-        Returns:
-            Tuple[Dataset, Dataset]: Return the tokenised training set and validation set.
-        """
-        # Load tokenised datasets from local files if they exist
+    def load_or_create_datasets(self):
         if os.path.exists(self.train_file) and os.path.exists(self.valid_file):
             training_dataset = torch.load(self.train_file, weights_only=False)
             validation_dataset = torch.load(self.valid_file, weights_only=False)
@@ -77,20 +52,21 @@ class BabyJoeyDataset:
 
 
 class BabyJoeyDataLoader:
-    def __init__(self, cfg: BabyJoeyConfig, training_dataset: Dataset, validation_dataset: Dataset):
-        r"""Initialise dataloaders for training and validation sets using configuration.
-
-        Args:
-            cfg (BabyJoeyConfig): Configuration object containing dataloader parameters.
-            training_dataset (Dataset): Training dataset to use.
-            validation_dataset (Dataset): Validation dataset to use.
-        """
+    def __init__(self, training_dataset: Dataset, validation_dataset: Dataset):
         self.training_dataset = training_dataset
         self.validation_dataset = validation_dataset
-        self.batch_size = cfg.dataloader.batch_size
+        self.batch_size = 1
 
     def get_dataloaders(self):
-        """Create dataloaders for training and validation datasets."""
         train_loader = torch.utils.data.DataLoader(self.training_dataset, batch_size=self.batch_size, shuffle=True)
         val_loader = torch.utils.data.DataLoader(self.validation_dataset, batch_size=self.batch_size)
+
+       # Inspect the shape of one batch
+        for batch in train_loader:
+            input_ids = batch['input_ids']
+            attention_mask = batch['attention_mask']
+            print(f"Input IDs shape: {input_ids.size()}")  # Shape: (batch_size, seq_length)
+            print(f"Attention mask shape: {attention_mask.size()}")  # Shape: (batch_size, seq_length)
+            break  # Print shapes for the first batch only
+        
         return train_loader, val_loader
