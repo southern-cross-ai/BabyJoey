@@ -6,7 +6,7 @@ from transformers import BatchEncoding, GPT2Tokenizer
 class BabyJoeyDataset:
     def __init__(self) -> None:
         self.data_path = str = "SouthernCrossAI/Tweets_cricket"
-        self.sequence_length = int = 512
+        self.max_seq_len = int = 512
         self.train_file = str = "train_data.pt"
         self.valid_file = str = "valid_data.pt"
         self.split_ratio = float = 0.2
@@ -22,7 +22,7 @@ class BabyJoeyDataset:
             dataset[self.column_name],
             truncation=True,
             padding='max_length',
-            max_length=self.sequence_length,
+            max_length=self.max_seq_len,
             return_attention_mask=True
         )
 

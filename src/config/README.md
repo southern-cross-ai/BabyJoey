@@ -15,7 +15,7 @@ BabyJoey is a model based on GPT-like transformers with a focus on tweet data fr
 
 ### Embedding Layer
 - **vocab_size**: 50257
-- **sequence_length**: 512 tokens
+- **max_seq_len**: 512 tokens
 - **embedding_dimension (n_embd)**: 512 dimensions
 
 ### Transformer Configuration

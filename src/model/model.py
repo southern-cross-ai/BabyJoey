@@ -1,85 +1,108 @@
 import torch
 import torch.nn as nn
 from torch import Tensor
+from dataclasses import dataclass
+
+# Dataclass for model configuration
+@dataclass
+class ModelConfig:
+    vocab_size: int
+    max_seq_len: int
+    n_embd: int
+    n_head: int
+    n_layers: int
+    max_seq_len: int
+    dropout_rate: float = 0.1  # Default dropout rate
+
 
 # Embedding Layer
 class Embeddings(nn.Module):
-    """Embedding layer for token and positional embeddings"""
-
-    def __init__(self, vocab_size: int, sequence_length: int, n_embd: int) -> None:
+    def __init__(self, config: ModelConfig):
         super().__init__()
-        self.token_embedding = nn.Embedding(vocab_size, n_embd)
-        self.position_embedding = nn.Embedding(sequence_length, n_embd)
+        self.token_embedding = nn.Embedding(config.vocab_size, config.n_embd)  # [vocab_size, n_embd]
+        self.position_embedding = nn.Embedding(config.max_seq_len, config.n_embd)  # [max_seq_len, n_embd]
+        self.dropout = nn.Dropout(config.dropout_rate)  # Dropout after embeddings
 
     def forward(self, x: Tensor) -> Tensor:
-        tok_embed_mat = self.token_embedding(x)
-        pos = torch.arange(0, x.size(1), device=x.device)
-        pos_embed_mat = self.position_embedding(pos)
-        embed_mat = tok_embed_mat + pos_embed_mat
-        return embed_mat
+        tok_embed_mat = self.token_embedding(x)  # [batch, seq_size, n_embd]
+        pos = torch.arange(0, x.size(1), device=x.device)  # [seq_size]
+        pos_embed_mat = self.position_embedding(pos)  # [seq_size, n_embd]
+        return self.dropout(tok_embed_mat + pos_embed_mat)  # [batch, seq_size, n_embd]
+
+
+# Multi-Head Attention Layer
+class MultiheadAttention(nn.Module):
+    def __init__(self, config: ModelConfig):
+        super().__init__()
+        self.attn = nn.MultiheadAttention(
+            embed_dim=config.n_embd,
+            num_heads=config.n_head,
+            batch_first=True
+        )
+        self.dropout = nn.Dropout(config.dropout_rate)
+
+        causal_mask = torch.triu(
+            torch.full((config.max_seq_len, config.max_seq_len), float("-inf")),
+            diagonal=1
+        )
+        self.register_buffer("causal_mask", causal_mask)
+
+    def forward(self, x: Tensor) -> Tensor:
+        seq_len = x.size(1)
+        causal_mask = self.causal_mask[:seq_len, :seq_len]
+        attn_output, _ = self.attn(x, x, x, attn_mask=causal_mask)
+        return self.dropout(attn_output)
+
+
+
+# FeedForward Layer
+class FeedForward(nn.Module):
+    def __init__(self, config: ModelConfig):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(config.n_embd, 4 * config.n_embd),  # [n_embd -> 4 * n_embd]
+            nn.GELU(),                                    # GELU for smoother gradients
+            nn.Dropout(config.dropout_rate),             # Dropout after activation
+            nn.Linear(4 * config.n_embd, config.n_embd),  # [4 * n_embd -> n_embd]
+            nn.Dropout(config.dropout_rate)              # Dropout after final linear
+        )
+
+    def forward(self, x: Tensor) -> Tensor:
+        return self.net(x)  # [batch, seq_size, n_embd]
+
 
 # Transformer Block
 class TransformerBlock(nn.Module):
-    def __init__(self, n_embd: int, n_head: int) -> None:
-        super(TransformerBlock, self).__init__()
-        self.ln1 = nn.LayerNorm(n_embd)
-        self.attn = nn.MultiheadAttention(n_embd, n_head)
-        self.ln2 = nn.LayerNorm(n_embd)
-        self.mlp = nn.Sequential(
-            nn.Linear(n_embd, 4 * n_embd),
-            nn.ReLU(),
-            nn.Linear(4 * n_embd, n_embd)
-        )
+    def __init__(self, config: ModelConfig):
+        super().__init__()
+        self.attn = MultiheadAttention(config)
+        self.ff = FeedForward(config)
+        self.ln1 = nn.LayerNorm(config.n_embd)
+        self.ln2 = nn.LayerNorm(config.n_embd)
+        self.dropout = nn.Dropout(config.dropout_rate)  # Residual dropout
 
-    def forward(self, x: Tensor, attn_mask: Tensor = None, key_padding_mask: Tensor = None) -> Tensor:
-        x_copy = x       
-        x = self.ln1(x)  
-        x = x.transpose(0, 1)
-        attn_output, _ = self.attn(x, x, x, attn_mask=attn_mask, key_padding_mask=key_padding_mask)
-        attn_output = attn_output.transpose(0, 1)
-        x = x_copy + attn_output
-        x_copy = x
-        x = self.ln2(x)
-        mlp_output = self.mlp(x)
-        x = x_copy + mlp_output
+    def forward(self, x: Tensor) -> Tensor:
+        attn_output = self.attn(self.ln1(x))  # [batch, seq_size, n_embd]
+        x = x + attn_output
+        x = self.dropout(x)  # Residual connection with dropout
+        ff_output = self.ff(self.ln2(x))  # [batch, seq_size, n_embd]
+        x = x + self.dropout(ff_output)  # Residual connection with dropout
         return x
+
 
 # BabyJoey Model
 class BabyJoeyModel(nn.Module):
-    def __init__(self, vocab_size: int, sequence_length: int, n_embd: int, n_head: int, n_layer_decoder: int) -> None:
+    def __init__(self, config: ModelConfig):
         super().__init__()
-        self.embeddings = Embeddings(vocab_size, sequence_length, n_embd)
-        self.decoder_blocks = nn.ModuleList(
-            [TransformerBlock(n_embd, n_head) for _ in range(n_layer_decoder)]
-        )
-        self.ln_f = nn.LayerNorm(n_embd)
-        self.head = nn.Linear(n_embd, vocab_size, bias=False)
+        self.embeddings = Embeddings(config)
+        self.blocks = nn.ModuleList([TransformerBlock(config) for _ in range(config.n_layers)])
+        self.ln_f = nn.LayerNorm(config.n_embd)
+        self.head = nn.Linear(config.n_embd, config.vocab_size, bias=True)  # Enable bias for final layer
 
-    def forward(self, x: Tensor, attn_mask: Tensor = None, key_padding_mask: Tensor = None) -> Tensor:
-        x = self.embeddings(x)
-        for block in self.decoder_blocks:
-            x = block(x, attn_mask=attn_mask, key_padding_mask=key_padding_mask)
-        x = self.ln_f(x)
-        logits = self.head(x)
+    def forward(self, x: Tensor) -> Tensor:
+        x = self.embeddings(x)  # [batch, seq_size, n_embd]
+        for block in self.blocks:
+            x = block(x)  # [batch, seq_size, n_embd]
+        x = self.ln_f(x)  # [batch, seq_size, n_embd]
+        logits = self.head(x)  # [batch, seq_size, vocab_size]
         return logits
-
-# Instantiate the Model
-vocab_size = 50257
-sequence_length = 512
-n_embd = 512
-n_head = 8
-n_layer_decoder = 1
-
-model = BabyJoeyModel(
-    vocab_size=vocab_size,
-    sequence_length=sequence_length,
-    n_embd=n_embd,
-    n_head=n_head,
-    n_layer_decoder=n_layer_decoder
-)
-
-# Example Input Tensor
-input_tensor = torch.randint(0, vocab_size, (2, sequence_length))  # Batch size = 2
-output = model(input_tensor)
-
-print("Output shape:", output.shape)  # Expected: (2, sequence_length, vocab_size)

@@ -6,7 +6,7 @@ import torch
 @dataclass
 class EmbeddingConfig:
     vocab_size: int = 50257
-    sequence_length: int = 512
+    max_seq_len: int = 512
     n_embd: int = 512
 
 # TransformerConfig for transformer blocks
@@ -40,7 +40,7 @@ class OptimizationConfig:
 @dataclass
 class BabyJoeyDataConfig:
     data_path: str = "SouthernCrossAI/Tweets_cricket"
-    sequence_length: int = 512
+    max_seq_len: int = 512
     train_file: str = "train_data.pt"
     valid_file: str = "valid_data.pt"
     split_ratio: float = 0.2
