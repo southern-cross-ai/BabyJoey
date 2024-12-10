@@ -1,1 +1,0 @@
-# Use the folder to test some pull requests

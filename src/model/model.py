@@ -2,35 +2,55 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 from dataclasses import dataclass
+from typing import Optional
 
-# Dataclass for model configuration
+
+    # # Sample configuration
+    # config = ModelConfig(
+    #     vocab_size=50257,  # Example vocabulary size
+    #     n_embd=512,
+    #     n_head=8,
+    #     n_layers=1,
+    #     max_seq_len=512,
+    #     padding_idx=50256,  # Padding token index
+    #     dropout_rate=0.1
+    # )
+
+# Model configuration using dataclass
 @dataclass
 class ModelConfig:
     vocab_size: int
-    max_seq_len: int
     n_embd: int
     n_head: int
     n_layers: int
     max_seq_len: int
+    padding_idx: int  # Index of the padding token
     dropout_rate: float = 0.1  # Default dropout rate
 
-
-# Embedding Layer
+# Embedding Layer with padding handling
 class Embeddings(nn.Module):
     def __init__(self, config: ModelConfig):
         super().__init__()
-        self.token_embedding = nn.Embedding(config.vocab_size, config.n_embd)  # [vocab_size, n_embd]
-        self.position_embedding = nn.Embedding(config.max_seq_len, config.n_embd)  # [max_seq_len, n_embd]
-        self.dropout = nn.Dropout(config.dropout_rate)  # Dropout after embeddings
-
+        self.token_embedding = nn.Embedding(
+            config.vocab_size,
+            config.n_embd,
+            padding_idx=config.padding_idx
+        )
+        self.position_embedding = nn.Embedding(config.max_seq_len, config.n_embd)
+        self.dropout = nn.Dropout(config.dropout_rate)
+    
     def forward(self, x: Tensor) -> Tensor:
-        tok_embed_mat = self.token_embedding(x)  # [batch, seq_size, n_embd]
-        pos = torch.arange(0, x.size(1), device=x.device)  # [seq_size]
-        pos_embed_mat = self.position_embedding(pos)  # [seq_size, n_embd]
-        return self.dropout(tok_embed_mat + pos_embed_mat)  # [batch, seq_size, n_embd]
+        seq_len = x.size(1)
+        assert seq_len <= self.position_embedding.num_embeddings, (
+            f"Sequence length {seq_len} exceeds maximum sequence length {self.position_embedding.num_embeddings}"
+        )
+        tok_embed_mat = self.token_embedding(x)  # [batch_size, seq_len, n_embd]
+        pos = torch.arange(0, seq_len, device=x.device).unsqueeze(0)  # [1, seq_len]
+        pos_embed_mat = self.position_embedding(pos)  # [1, seq_len, n_embd]
+        x = tok_embed_mat + pos_embed_mat  # Broadcasting over batch_size
+        return self.dropout(x)  # [batch_size, seq_len, n_embd]
 
-
-# Multi-Head Attention Layer
+# Multi-Head Attention Layer with padding handling
 class MultiheadAttention(nn.Module):
     def __init__(self, config: ModelConfig):
         super().__init__()
@@ -41,37 +61,45 @@ class MultiheadAttention(nn.Module):
         )
         self.dropout = nn.Dropout(config.dropout_rate)
 
+        # Create a boolean causal mask
         causal_mask = torch.triu(
-            torch.full((config.max_seq_len, config.max_seq_len), float("-inf")),
+            torch.ones((config.max_seq_len, config.max_seq_len), dtype=torch.bool),
             diagonal=1
         )
-        self.register_buffer("causal_mask", causal_mask)
+        self.register_buffer("causal_mask", causal_mask)  # [max_seq_len, max_seq_len]
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: Tensor, key_padding_mask: Optional[Tensor] = None) -> Tensor:
         seq_len = x.size(1)
-        causal_mask = self.causal_mask[:seq_len, :seq_len]
-        attn_output, _ = self.attn(x, x, x, attn_mask=causal_mask)
-        return self.dropout(attn_output)
+        causal_mask = self.causal_mask[:seq_len, :seq_len]  # [seq_len, seq_len]
 
+        # Ensure masks are boolean tensors
+        assert causal_mask.dtype == torch.bool, "causal_mask must be a boolean tensor"
+        if key_padding_mask is not None:
+            assert key_padding_mask.dtype == torch.bool, "key_padding_mask must be a boolean tensor"
 
+        attn_output, _ = self.attn(
+            x, x, x,
+            attn_mask=causal_mask,
+            key_padding_mask=key_padding_mask
+        )
+        return self.dropout(attn_output)  # [batch_size, seq_len, n_embd]
 
 # FeedForward Layer
 class FeedForward(nn.Module):
     def __init__(self, config: ModelConfig):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(config.n_embd, 4 * config.n_embd),  # [n_embd -> 4 * n_embd]
-            nn.GELU(),                                    # GELU for smoother gradients
-            nn.Dropout(config.dropout_rate),             # Dropout after activation
-            nn.Linear(4 * config.n_embd, config.n_embd),  # [4 * n_embd -> n_embd]
-            nn.Dropout(config.dropout_rate)              # Dropout after final linear
+            nn.Linear(config.n_embd, 4 * config.n_embd),
+            nn.GELU(),
+            nn.Dropout(config.dropout_rate),
+            nn.Linear(4 * config.n_embd, config.n_embd),
+            nn.Dropout(config.dropout_rate)
         )
-
+    
     def forward(self, x: Tensor) -> Tensor:
-        return self.net(x)  # [batch, seq_size, n_embd]
+        return self.net(x)  # [batch_size, seq_len, n_embd]
 
-
-# Transformer Block
+# Transformer Block with padding handling
 class TransformerBlock(nn.Module):
     def __init__(self, config: ModelConfig):
         super().__init__()
@@ -79,30 +107,32 @@ class TransformerBlock(nn.Module):
         self.ff = FeedForward(config)
         self.ln1 = nn.LayerNorm(config.n_embd)
         self.ln2 = nn.LayerNorm(config.n_embd)
-        self.dropout = nn.Dropout(config.dropout_rate)  # Residual dropout
-
-    def forward(self, x: Tensor) -> Tensor:
-        attn_output = self.attn(self.ln1(x))  # [batch, seq_size, n_embd]
-        x = x + attn_output
-        x = self.dropout(x)  # Residual connection with dropout
-        ff_output = self.ff(self.ln2(x))  # [batch, seq_size, n_embd]
-        x = x + self.dropout(ff_output)  # Residual connection with dropout
+        self.dropout = nn.Dropout(config.dropout_rate)
+    
+    def forward(self, x: Tensor, key_padding_mask: Optional[Tensor] = None) -> Tensor:
+        attn_output = self.attn(self.ln1(x), key_padding_mask=key_padding_mask)
+        x = x + attn_output  # Residual connection
+        x = self.dropout(x)
+        ff_output = self.ff(self.ln2(x))
+        x = x + self.dropout(ff_output)  # Residual connection
         return x
 
-
-# BabyJoey Model
+# BabyJoey Model with padding handling
 class BabyJoeyModel(nn.Module):
     def __init__(self, config: ModelConfig):
         super().__init__()
+        self.config = config  # Store config for use in forward method
         self.embeddings = Embeddings(config)
         self.blocks = nn.ModuleList([TransformerBlock(config) for _ in range(config.n_layers)])
         self.ln_f = nn.LayerNorm(config.n_embd)
-        self.head = nn.Linear(config.n_embd, config.vocab_size, bias=True)  # Enable bias for final layer
-
+        self.head = nn.Linear(config.n_embd, config.vocab_size, bias=True)
+    
     def forward(self, x: Tensor) -> Tensor:
-        x = self.embeddings(x)  # [batch, seq_size, n_embd]
+        # x: [batch_size, seq_len]
+        key_padding_mask = (x == self.config.padding_idx)  # [batch_size, seq_len]
+        x = self.embeddings(x)  # [batch_size, seq_len, n_embd]
         for block in self.blocks:
-            x = block(x)  # [batch, seq_size, n_embd]
-        x = self.ln_f(x)  # [batch, seq_size, n_embd]
-        logits = self.head(x)  # [batch, seq_size, vocab_size]
+            x = block(x, key_padding_mask=key_padding_mask)
+        x = self.ln_f(x)  # [batch_size, seq_len, n_embd]
+        logits = self.head(x)  # [batch_size, seq_len, vocab_size]
         return logits

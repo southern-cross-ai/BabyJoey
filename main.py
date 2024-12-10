@@ -1,13 +1,10 @@
-import torch
-from torchtnt.framework.fit import fit
-from torchtnt.framework.state import State
-from torchtnt.framework.callbacks import TQDMProgressBar
+from src.data.data import BabyJoeyDataset, BabyJoeyDataLoader
+from src.model.model import BabyJoeyModel
 from dataclasses import dataclass
+import torch
+from torch.optim import AdamW
+import torch.nn.functional as F
 
-
-import hydra
-
-# Model configuration using dataclass
 @dataclass
 class ModelConfig:
     vocab_size: int
@@ -18,75 +15,83 @@ class ModelConfig:
     padding_idx: int  # Index of the padding token
     dropout_rate: float = 0.1  # Default dropout rate
 
+# Sample configuration
 config = ModelConfig(
-    vocab_size=50,  # Example vocabulary size
+    vocab_size=50257,  # Example vocabulary size
     n_embd=512,
     n_head=8,
     n_layers=1,
-    max_seq_len=768,
-    padding_idx=0,  # Padding token index
+    max_seq_len=512,
+    padding_idx=50256,  # Padding token index
     dropout_rate=0.1
 )
 
-from src.data import BabyJoeyDataLoader, BabyJoeyDataset
-from src.model import BabyJoeyModel
-from src.config.config import BabyJoeyConfig
+dataset_instance = BabyJoeyDataset()
+training_dataset, validation_dataset = dataset_instance.load_or_create_datasets()
 
-@hydra.main(version_base=None, config_name="baby_joey_config")
-def main(cfg: BabyJoeyConfig):
-    # Dataset setup
-    dataset = BabyJoeyDataset()
-    training_dataset, validation_dataset = dataset.load_or_create_datasets()
+data_loader_instance = BabyJoeyDataLoader(training_dataset, validation_dataset)
+train_loader, val_loader = data_loader_instance.get_dataloaders()
 
-    # Dataloader setup
-    dataloader = BabyJoeyDataLoader(training_dataset, validation_dataset)
-    training_dataloader, validation_dataloader = dataloader.get_dataloaders()
+# Initialize model
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = BabyJoeyModel(config).to(device)
+model.train()
 
-    # Model setup
-    device = torch.device(cfg.training.device)
-    model = BabyJoeyModel(config).to(device)
+# Use AdamW optimizer
+optimizer = AdamW(model.parameters(), lr=3e-4)  # Example learning rate
 
-    # Define loss function and optimizer
-    criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=cfg.training.learning_rate)
+# Simple training loop
+num_epochs = 3
+for epoch in range(num_epochs):
+    print(f"Epoch {epoch+1}/{num_epochs}")
+    for step, batch in enumerate(train_loader):
+        input_ids = batch['input_ids'].to(device)  # [batch_size, seq_len]
 
-    # Define training step
-    def train_step(state: State, data):
-        model.train()
-        inputs, labels = data
-        inputs = inputs.to(device)
-        labels = labels.to(device)
+        # Forward pass
+        logits = model(input_ids)  # [batch_size, seq_len, vocab_size]
+
+        # Shift inputs and logits for causal language modeling
+        shifted_logits = logits[:, :-1, :].contiguous()   # [batch_size, seq_len-1, vocab_size]
+        shifted_input_ids = input_ids[:, 1:].contiguous()  # [batch_size, seq_len-1]
+
+        # Compute loss with label smoothing and ignoring padding tokens
+        loss = F.cross_entropy(
+            shifted_logits.view(-1, config.vocab_size),
+            shifted_input_ids.view(-1),
+            ignore_index=config.padding_idx,
+            label_smoothing=0.1  # Introduce label smoothing
+        )
+
+        # Backpropagation
         optimizer.zero_grad()
-        outputs = model(inputs)
-        loss = criterion(outputs.view(-1, outputs.size(-1)), labels.view(-1))
         loss.backward()
         optimizer.step()
-        return {"loss": loss.item()}
 
-    # Define evaluation step
-    def eval_step(state: State, data):
-        model.eval()
-        with torch.no_grad():
-            inputs, labels = data
-            inputs = inputs.to(device)
-            labels = labels.to(device)
-            outputs = model(inputs)
-            loss = criterion(outputs.view(-1, outputs.size(-1)), labels.view(-1))
-        return {"val_loss": loss.item()}
+        if (step + 1) % 10 == 0:
+            print(f"Step {step+1}, Loss: {loss.item():.4f}")
 
-    # Setup callbacks
-    callbacks = [TQDMProgressBar()]
+    # Validation loop
+    model.eval()
+    val_loss = 0.0
+    val_steps = 0
+    with torch.no_grad():
+        for batch in val_loader:
+            input_ids = batch['input_ids'].to(device)
+            logits = model(input_ids)
 
-    # Run the training loop
-    fit(
-        model=model,
-        train_dataloader=training_dataloader,
-        eval_dataloader=validation_dataloader,
-        max_epochs=cfg.training.max_epochs,
-        train_step=train_step,
-        eval_step=eval_step,
-        callbacks=callbacks,
-    )
+            shifted_logits = logits[:, :-1, :].contiguous()
+            shifted_input_ids = input_ids[:, 1:].contiguous()
 
-if __name__ == "__main__":
-    main()
+            val_batch_loss = F.cross_entropy(
+                shifted_logits.view(-1, config.vocab_size),
+                shifted_input_ids.view(-1),
+                ignore_index=config.padding_idx,
+                label_smoothing=0.1
+            )
+
+            val_loss += val_batch_loss.item()
+            val_steps += 1
+
+    avg_val_loss = val_loss / max(val_steps, 1)
+    print(f"Validation Loss: {avg_val_loss:.4f}")
+    model.train()
