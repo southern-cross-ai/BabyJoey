@@ -18,10 +18,10 @@ class ModelConfig:
 # Sample configuration
 config = ModelConfig(
     vocab_size=50257,  # Example vocabulary size
-    n_embd=512,
-    n_head=8,
-    n_layers=1,
-    max_seq_len=512,
+    n_embd=768,
+    n_head=12,
+    n_layers=12,
+    max_seq_len=1024,
     padding_idx=50256,  # Padding token index
     dropout_rate=0.1
 )
@@ -41,7 +41,7 @@ model.train()
 optimizer = AdamW(model.parameters(), lr=3e-4)  # Example learning rate
 
 # Simple training loop
-num_epochs = 3
+num_epochs = 5
 for epoch in range(num_epochs):
     print(f"Epoch {epoch+1}/{num_epochs}")
     for step, batch in enumerate(train_loader):
@@ -59,7 +59,7 @@ for epoch in range(num_epochs):
             shifted_logits.view(-1, config.vocab_size),
             shifted_input_ids.view(-1),
             ignore_index=config.padding_idx,
-            label_smoothing=0.1  # Introduce label smoothing
+            label_smoothing=0.1
         )
 
         # Backpropagation
@@ -95,3 +95,14 @@ for epoch in range(num_epochs):
     avg_val_loss = val_loss / max(val_steps, 1)
     print(f"Validation Loss: {avg_val_loss:.4f}")
     model.train()
+
+    # Save a checkpoint after each epoch
+    checkpoint_path = f"baby_joey_checkpoint_epoch_{epoch+1}.pt"
+    torch.save({
+        'epoch': epoch + 1,
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'val_loss': avg_val_loss,
+        'config': config,
+    }, checkpoint_path)
+    print(f"Checkpoint saved at {checkpoint_path}")

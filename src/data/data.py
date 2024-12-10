@@ -5,13 +5,13 @@ from transformers import BatchEncoding, GPT2Tokenizer
 
 class BabyJoeyDataset:
     def __init__(self) -> None:
-        self.data_path = "SouthernCrossAI/Tweets_cricket"
-        self.max_seq_len = 512
+        self.data_path = "SouthernCrossAI/Project_Gutenberg_Australia"
+        self.max_seq_len = 1024
         self.train_file = "train_data.pt"
         self.valid_file = "valid_data.pt"
         self.split_ratio = 0.2
         self.sample_ratio = 0.1
-        self.column_name = "tweet"
+        self.column_name = "Paragraph"
 
         # Tokenizer setup
         self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2', clean_up_tokenization_spaces=True)
