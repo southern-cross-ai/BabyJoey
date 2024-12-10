@@ -1,3 +1,7 @@
+# Data files
+processed_data*
+
+
 # VSCode
 .vscode/
 

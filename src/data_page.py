@@ -1,71 +1,126 @@
 import os
 import torch
-from datasets import Dataset, DatasetDict, load_dataset
-from transformers import BatchEncoding, GPT2Tokenizer
+from dataclasses import dataclass, field
+from datasets import load_dataset, DatasetDict
+from transformers import AutoTokenizer
 
-class BabyJoeyDataset:
-    def __init__(self) -> None:
-        self.data_path = "SouthernCrossAI/Project_Gutenberg_Australia"
-        self.max_seq_len = 1024
-        self.train_file = "train_data.pt"
-        self.valid_file = "valid_data.pt"
-        self.split_ratio = 0.2
-        self.sample_ratio = 0.1
-        self.column_name = "Paragraph"
+@dataclass
+class DatasetConfig:
+    batch_size: int = 2
+    data_path: str = "SouthernCrossAI/Tweets_Australian_Cities"
+    max_seq_len: int = 1024
+    split_ratio: float = 0.2
+    sample_ratio: float = 1.0
+    column_name: str = "tweet"
+    tokenizer_name: str = "gpt2"
+    output_dir: str = field(init=False)
 
-        # Tokenizer setup
-        self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2', clean_up_tokenization_spaces=True)
-        self.tokenizer.pad_token = self.tokenizer.eos_token
+    def __post_init__(self):
+        # Extract dataset name from the data_path
+        dataset_name = self.data_path.split("/")[-1]
+        # Incorporate the dataset name into the output directory
+        self.output_dir = f"./processed_data_{dataset_name}"
 
-    def tokenize_function(self, dataset: DatasetDict) -> BatchEncoding:
-        return self.tokenizer(
-            dataset[self.column_name],
-            truncation=True,
-            padding='max_length',
-            max_length=self.max_seq_len,
-            return_attention_mask=False  # Removed attention_mask generation
+class GetJoeyData:
+    def __init__(self, config: DatasetConfig):
+        self.config = config
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            self.config.tokenizer_name, 
+            clean_up_tokenization_spaces=True
         )
+        self.tokenizer.pad_token = self.tokenizer.eos_token
+        self.train_loader = None
+        self.val_loader = None
+        self.load_data()
 
-    def load_or_create_datasets(self):
-        if os.path.exists(self.train_file) and os.path.exists(self.valid_file):
-            training_dataset = torch.load(self.train_file)
-            validation_dataset = torch.load(self.valid_file)
-            
+    def datasets(self):
+        # Check if dataset is already saved to disk
+        if os.path.exists(self.config.output_dir) and os.path.isdir(self.config.output_dir):
+            print(f"Loading raw datasets from disk at {self.config.output_dir}...")
+            datasets = DatasetDict.load_from_disk(self.config.output_dir)
         else:
-            dataset = load_dataset(self.data_path)['train']
+            print("Loading dataset from Hugging Face Hub...")
+            # Load raw dataset
+            raw_dataset = load_dataset(self.config.data_path)
+            dataset = raw_dataset['train']
 
-            # Split dataset into training and validation sets
-            dataset = dataset.train_test_split(test_size=self.split_ratio)
+            # (Optional) sampling logic could be placed here
 
-            # Tokenize datasets
-            training_dataset = dataset['train'].map(self.tokenize_function, batched=True)
-            validation_dataset = dataset['test'].map(self.tokenize_function, batched=True)
+            # Split dataset
+            datasets = dataset.train_test_split(test_size=self.config.split_ratio)
+            # Save dataset to disk
+            datasets.save_to_disk(self.config.output_dir)
+            print(f"Datasets saved to {self.config.output_dir}")
 
-            # Format the datasets to return only input_ids
-            training_dataset.set_format(type='torch', columns=['input_ids'])
-            validation_dataset.set_format(type='torch', columns=['input_ids'])
+        return datasets
 
-            # Save tokenized datasets to local paths
-            torch.save(training_dataset, self.train_file)
-            torch.save(validation_dataset, self.valid_file)
+    def tokenize(self, dataset):
+        # Ensure that the column exists
+        if self.config.column_name not in dataset.column_names:
+            raise ValueError(f"Column '{self.config.column_name}' does not exist in the dataset.")
 
-        return training_dataset, validation_dataset
+        tokenized_dataset = dataset.map(
+            lambda examples: self.tokenizer(
+                examples[self.config.column_name],
+                truncation=True,
+                padding='max_length',
+                max_length=self.config.max_seq_len,
+                return_attention_mask=False
+            ),
+            batched=True
+        )
+        # Remove the original text column to save space
+        tokenized_dataset = tokenized_dataset.remove_columns([self.config.column_name])
+        tokenized_dataset.set_format(type="torch", columns=["input_ids"])
+        return tokenized_dataset
 
-
-class BabyJoeyDataLoader:
-    def __init__(self, training_dataset: Dataset, validation_dataset: Dataset):
-        self.training_dataset = training_dataset
-        self.validation_dataset = validation_dataset
-        self.batch_size = 2
-
-    def get_dataloaders(self):
-        train_loader = torch.utils.data.DataLoader(self.training_dataset, batch_size=self.batch_size, shuffle=True)
-        val_loader = torch.utils.data.DataLoader(self.validation_dataset, batch_size=self.batch_size)
-
-        # Inspect the shape of one batch (now only input_ids)
-        for batch in train_loader:
-            input_ids = batch['input_ids']
-            print(f"Input IDs shape: {input_ids.size()}")  # Shape: (batch_size, seq_length)
-            break  # Print shapes for the first batch only
-        
+    def create_dataloaders(self):
+        train_loader = torch.utils.data.DataLoader(
+            self.config.training_dataset, 
+            batch_size=self.config.batch_size, 
+            shuffle=True
+        )
+        val_loader = torch.utils.data.DataLoader(
+            self.config.validation_dataset, 
+            batch_size=self.config.batch_size
+        )
         return train_loader, val_loader
+
+    def load_data(self):
+        # First, load (or create) raw datasets
+        raw_datasets = self.datasets()
+        
+        # Directory to store tokenized data
+        tokenized_dir = os.path.join(self.config.output_dir, "tokenized")
+
+        if os.path.exists(tokenized_dir) and os.path.isdir(tokenized_dir):
+            print("Loading tokenized datasets from disk...")
+            tokenized_datasets = DatasetDict.load_from_disk(tokenized_dir)
+        else:
+            print("Tokenizing datasets...")
+            tokenized_train = self.tokenize(raw_datasets['train'])
+            tokenized_val = self.tokenize(raw_datasets['test'])
+            
+            # Combine into a DatasetDict
+            tokenized_datasets = DatasetDict({
+                "train": tokenized_train,
+                "test": tokenized_val
+            })
+            tokenized_datasets.save_to_disk(tokenized_dir)
+            print(f"Tokenized datasets saved to {tokenized_dir}")
+
+        self.config.training_dataset = tokenized_datasets['train']
+        self.config.validation_dataset = tokenized_datasets['test']
+
+        # Create dataloaders
+        self.train_loader, self.val_loader = self.create_dataloaders()
+
+
+if __name__ == "__main__":
+    # Testing
+    config = DatasetConfig(tokenizer_name="gpt2")
+    data_handler = GetJoeyData(config)
+
+    for batch in data_handler.train_loader:
+        print(batch["input_ids"].shape)
+        break
