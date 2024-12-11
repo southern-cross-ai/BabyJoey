@@ -1,31 +1,25 @@
+import hydra
+from omegaconf import DictConfig, OmegaConf
 import torch
 import torch.nn as nn
 from torch.optim import AdamW
 from torch.utils.data import DataLoader, Dataset
-from dataclasses import dataclass, field
-from typing import Any, Dict
 
-@dataclass
-class ModelConfig:
-    device: torch.device
-    vocab_size: int
-    padding_idx: int
-    learning_rate: float = 3e-4
-    batch_size: int = 32
-    label_smoothing: float = 0.1
-    optimizer: tuple = (AdamW, {'weight_decay': 1e-2})  # Combined optimizer class and params
 
 class ModelTrainer:
-    def __init__(self, model: nn.Module, train_dataset: Dataset, val_dataset: Dataset, config: ModelConfig):
+    def __init__(self, model: nn.Module, train_dataset: Dataset, val_dataset: Dataset, config: DictConfig):
         self.model = model.to(config.device)
         self.train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
         self.val_loader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False)
         self.config = config
 
-        opt_class, opt_params = self.config.optimizer
+        # Initialize optimizer dynamically
+        # Dynamically resolve the optimizer class
+        opt_class = eval(config.optimizer.cls)
+        opt_params = config.optimizer.params
         self.optimizer = opt_class(
             self.model.parameters(),
-            lr=self.config.learning_rate,
+            lr=config.learning_rate,
             **opt_params
         )
 
@@ -87,7 +81,7 @@ class ModelTrainer:
             'model_state_dict': self.model.state_dict(),
             'optimizer_state_dict': self.optimizer.state_dict(),
             'val_loss': avg_val_loss,
-            'config': self.config,
+            'config': OmegaConf.to_container(self.config),
         }, checkpoint_path)
         print(f"Checkpoint saved at {checkpoint_path}")
 
@@ -98,36 +92,40 @@ class ModelTrainer:
             avg_val_loss = self.validate_epoch()
             self.save_checkpoint(epoch, avg_val_loss)
 
-# ---------------- Testing -------------------------
 
-if __name__ == '__main__':
-    class SimpleDataset(Dataset):
-        def __init__(self, size: int, seq_length: int, vocab_size: int):
-            self.data = torch.randint(0, vocab_size, (size, seq_length))
-        
-        def __len__(self):
-            return len(self.data)
-        
-        def __getitem__(self, idx: int):
-            return {'input_ids': self.data[idx]}
+if __name__ == "__main__":
+    @hydra.main(config_path="../conf", config_name="config")
+    def main(cfg: DictConfig):
+        # Define a simple dataset
+        class SimpleDataset(Dataset):
+            def __init__(self, size: int, seq_length: int, vocab_size: int):
+                self.data = torch.randint(0, vocab_size, (size, seq_length))
+            
+            def __len__(self):
+                return len(self.data)
+            
+            def __getitem__(self, idx: int):
+                return {'input_ids': self.data[idx]}
 
-    class SimpleModel(nn.Module):
-        def __init__(self, vocab_size: int, embed_dim: int):
-            super(SimpleModel, self).__init__()
-            self.embedding = nn.Embedding(vocab_size, embed_dim)
-            self.linear = nn.Linear(embed_dim, vocab_size)
-        
-        def forward(self, x: torch.Tensor) -> torch.Tensor:
-            x = self.embedding(x)
-            logits = self.linear(x)
-            return logits
+        # Define a simple model
+        class SimpleModel(nn.Module):
+            def __init__(self, vocab_size: int, embed_dim: int):
+                super(SimpleModel, self).__init__()
+                self.embedding = nn.Embedding(vocab_size, embed_dim)
+                self.linear = nn.Linear(embed_dim, vocab_size)
+            
+            def forward(self, x: torch.Tensor) -> torch.Tensor:
+                x = self.embedding(x)
+                logits = self.linear(x)
+                return logits
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    config = ModelConfig(device=device, vocab_size=100, padding_idx=0)
-    model = SimpleModel(vocab_size=100, embed_dim=64)
-    train_dataset = SimpleDataset(100, 10, 100)
-    val_dataset = SimpleDataset(50, 10, 100)
+        # Load configurations and initialize model, dataset, and trainer
+        model = SimpleModel(vocab_size=cfg.vocab_size, embed_dim=64)
+        train_dataset = SimpleDataset(100, 10, cfg.vocab_size)
+        val_dataset = SimpleDataset(50, 10, cfg.vocab_size)
 
-    trainer = ModelTrainer(model, train_dataset, val_dataset, config)
-    trainer.fit(num_epochs=2)
-    print("----------Testing Compleat---------------")
+        trainer = ModelTrainer(model, train_dataset, val_dataset, cfg)
+        trainer.fit(num_epochs=cfg.training.num_epochs)
+
+    # Call the main function
+    main()
