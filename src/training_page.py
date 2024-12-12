@@ -4,19 +4,13 @@ from torch.optim import AdamW
 from torch.utils.data import DataLoader, Dataset
 from dataclasses import dataclass, field
 from typing import Any, Dict
-
-@dataclass
-class ModelConfig:
-    device: torch.device
-    vocab_size: int
-    padding_idx: int
-    learning_rate: float = 3e-4
-    batch_size: int = 32
-    label_smoothing: float = 0.1
-    optimizer: tuple = (AdamW, {'weight_decay': 1e-2})  # Combined optimizer class and params
+from dataclasses import dataclass, field
+from hydra.core.config_store import ConfigStore
+from torch.optim import AdamW
+from config import TrainingConfig 
 
 class ModelTrainer:
-    def __init__(self, model: nn.Module, train_dataset: Dataset, val_dataset: Dataset, config: ModelConfig):
+    def __init__(self, model: nn.Module, train_dataset: Dataset, val_dataset: Dataset, config: TrainingConfig):
         self.model = model.to(config.device)
         self.train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
         self.val_loader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False)
@@ -123,7 +117,7 @@ if __name__ == '__main__':
             return logits
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    config = ModelConfig(device=device, vocab_size=100, padding_idx=0)
+    config = TrainingConfig(device=device, vocab_size=100, padding_idx=0)
     model = SimpleModel(vocab_size=100, embed_dim=64)
     train_dataset = SimpleDataset(100, 10, 100)
     val_dataset = SimpleDataset(50, 10, 100)
