@@ -3,29 +3,7 @@ import torch.nn as nn
 from torch import Tensor
 from dataclasses import dataclass
 from typing import Optional
-
-
-    # # Sample configuration
-    # config = ModelConfig(
-    #     vocab_size=50257,  # Example vocabulary size
-    #     n_embd=512,
-    #     n_head=8,
-    #     n_layers=1,
-    #     max_seq_len=512,
-    #     padding_idx=50256,  # Padding token index
-    #     dropout_rate=0.1
-    # )
-
-# Model configuration using dataclass
-@dataclass
-class ModelConfig:
-    vocab_size: int
-    n_embd: int
-    n_head: int
-    n_layers: int
-    max_seq_len: int
-    padding_idx: int  # Index of the padding token
-    dropout_rate: float = 0.1  # Default dropout rate
+from config import ModelConfig
 
 # Embedding Layer with padding handling
 class Embeddings(nn.Module):
@@ -136,3 +114,35 @@ class BabyJoeyModel(nn.Module):
         x = self.ln_f(x)  # [batch_size, seq_len, n_embd]
         logits = self.head(x)  # [batch_size, seq_len, vocab_size]
         return logits
+
+if __name__ == '__main__':
+    print('------------- Testing -----------------')
+    
+    def test_baby_joey():
+        # Create a default model configuration
+        config = ModelConfig()
+
+        # Create a model instance
+        model = BabyJoeyModel(config)
+
+        # Generate random test data
+        batch_size = 4
+        seq_len = 16  # Use a smaller sequence length for testing
+        input_ids = torch.randint(0, config.vocab_size, (batch_size, seq_len))
+    
+        # Add padding tokens for testing
+        input_ids[:, -2:] = config.padding_idx  # Pad the last two tokens
+
+        # Pass the data through the model
+        logits = model(input_ids)
+
+        # Verify output shape
+        assert logits.shape == (batch_size, seq_len, config.vocab_size), (
+            f"Expected output shape {(batch_size, seq_len, config.vocab_size)}, got {logits.shape}"
+        )
+
+        return f"Test passed! Output shape: {logits.shape}"
+    
+    result = test_baby_joey()
+    print(result)
+    print("---------- Testing Complete ---------------")

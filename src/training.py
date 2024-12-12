@@ -1,12 +1,8 @@
 import torch
 import torch.nn as nn
-from torch.optim import AdamW
 from torch.utils.data import DataLoader, Dataset
 from dataclasses import dataclass, field
 from typing import Any, Dict
-from dataclasses import dataclass, field
-from hydra.core.config_store import ConfigStore
-from torch.optim import AdamW
 from config import TrainingConfig 
 
 class ModelTrainer:
@@ -95,6 +91,7 @@ class ModelTrainer:
 # ---------------- Testing -------------------------
 
 if __name__ == '__main__':
+    print('------------- Testing -----------------')
     class SimpleDataset(Dataset):
         def __init__(self, size: int, seq_length: int, vocab_size: int):
             self.data = torch.randint(0, vocab_size, (size, seq_length))

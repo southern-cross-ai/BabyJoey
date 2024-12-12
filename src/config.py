@@ -1,10 +1,10 @@
 from dataclasses import dataclass, field
-# from hydra.core.config_store import ConfigStore
-# import torch
-# from torch.optim import AdamW
+import torch
+from torch.optim import AdamW
 
 @dataclass
 class TrainingConfig:
+    device: torch.device
     vocab_size: int = 512
     padding_idx: int = 50000
     learning_rate: float = 3e-4
@@ -12,6 +12,8 @@ class TrainingConfig:
     label_smoothing: float = 0.1
     optimizer_name: str = "AdamW"  # Store as string instead of class
     optimizer_params: dict = field(default_factory=lambda: {"weight_decay": 1e-2})
+    optimizer: tuple = (AdamW, {'weight_decay': 1e-2})
+
 
 @dataclass
 class DatasetConfig:
@@ -30,11 +32,13 @@ class DatasetConfig:
         # Incorporate the dataset name into the output directory
         self.output_dir = f"./processed_data_{dataset_name}"
 
-
-
-
-
-
-# # Register the configuration in Hydra's ConfigStore
-# cs = ConfigStore.instance()
-# cs.store(name="training_config", node=TrainingConfig)
+# Model configuration using dataclass
+@dataclass
+class ModelConfig:
+    vocab_size: int = 50257
+    n_embd: int = 512
+    n_head: int = 8
+    n_layers: int = 8
+    max_seq_len: int = 512
+    padding_idx: int = 50256
+    dropout_rate: float = 0.1 

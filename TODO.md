@@ -1,5 +1,5 @@
 # Data Page
-
+    - Done
 
 # Training Page
     - add W&B contors
@@ -10,6 +10,6 @@
     - Add Sharded Disdributed traing
 
 # Config Page
-    - Move configs to this page
+    - Done
 
  
