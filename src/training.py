@@ -1,15 +1,20 @@
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from dataclasses import dataclass, field
-from typing import Any, Dict
-from config import TrainingConfig 
+from typing import Any
+
+if __name__ == "__main__":
+    from config import TrainingConfig
+else:
+    from src.config import TrainingConfig
+
 
 class ModelTrainer:
-    def __init__(self, model: nn.Module, train_dataset: Dataset, val_dataset: Dataset, config: TrainingConfig):
+    def __init__(self, model: nn.Module, train_loader: DataLoader, val_loader: DataLoader, config: TrainingConfig):
         self.model = model.to(config.device)
-        self.train_loader = DataLoader(train_dataset, batch_size=config.batch_size, shuffle=True)
-        self.val_loader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False)
+        self.train_loader = train_loader
+        self.val_loader = val_loader
         self.config = config
 
         opt_class, opt_params = self.config.optimizer
@@ -28,8 +33,9 @@ class ModelTrainer:
             shifted_logits = logits[:, :-1, :].contiguous()
             shifted_input_ids = input_ids[:, 1:].contiguous()
 
+            # Use dynamic shape for vocabulary size
             loss = nn.functional.cross_entropy(
-                shifted_logits.view(-1, self.config.vocab_size),
+                shifted_logits.view(-1, shifted_logits.size(-1)),  # Use dynamic size
                 shifted_input_ids.view(-1),
                 ignore_index=self.config.padding_idx,
                 label_smoothing=self.config.label_smoothing
@@ -54,8 +60,9 @@ class ModelTrainer:
                 shifted_logits = logits[:, :-1, :].contiguous()
                 shifted_input_ids = input_ids[:, 1:].contiguous()
 
+                # Use dynamic shape for vocabulary size
                 val_batch_loss = nn.functional.cross_entropy(
-                    shifted_logits.view(-1, self.config.vocab_size),
+                    shifted_logits.view(-1, shifted_logits.size(-1)),  # Use dynamic size
                     shifted_input_ids.view(-1),
                     ignore_index=self.config.padding_idx,
                     label_smoothing=self.config.label_smoothing
@@ -88,11 +95,13 @@ class ModelTrainer:
             avg_val_loss = self.validate_epoch()
             self.save_checkpoint(epoch, avg_val_loss)
 
+
 # ---------------- Testing -------------------------
 
 if __name__ == '__main__':
     print('------------- Testing -----------------')
-    class SimpleDataset(Dataset):
+
+    class SimpleDataset(torch.utils.data.Dataset):
         def __init__(self, size: int, seq_length: int, vocab_size: int):
             self.data = torch.randint(0, vocab_size, (size, seq_length))
         
@@ -115,10 +124,15 @@ if __name__ == '__main__':
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config = TrainingConfig(device=device, vocab_size=100, padding_idx=0)
+
     model = SimpleModel(vocab_size=100, embed_dim=64)
     train_dataset = SimpleDataset(100, 10, 100)
     val_dataset = SimpleDataset(50, 10, 100)
 
-    trainer = ModelTrainer(model, train_dataset, val_dataset, config)
+    train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=16, shuffle=False)
+
+    trainer = ModelTrainer(model, train_loader, val_loader, config)
     trainer.fit(num_epochs=2)
-    print("----------Testing Compleat---------------")
+
+    print("---------- Testing Complete ---------------")

@@ -3,7 +3,11 @@ import torch.nn as nn
 from torch import Tensor
 from dataclasses import dataclass
 from typing import Optional
-from config import ModelConfig
+
+if __name__ == "__main__":
+    from config import ModelConfig
+else:
+  from src.config import ModelConfig
 
 # Embedding Layer with padding handling
 class Embeddings(nn.Module):

@@ -8,7 +8,7 @@ class TrainingConfig:
     vocab_size: int = 512
     padding_idx: int = 50000
     learning_rate: float = 3e-4
-    batch_size: int = 32
+    batch_size: int = 1
     label_smoothing: float = 0.1
     optimizer_name: str = "AdamW"  # Store as string instead of class
     optimizer_params: dict = field(default_factory=lambda: {"weight_decay": 1e-2})
@@ -19,7 +19,7 @@ class TrainingConfig:
 class DatasetConfig:
     batch_size: int = 2
     data_path: str = "SouthernCrossAI/Tweets_Australian_Cities"
-    max_seq_len: int = 1024
+    max_seq_len: int = 512
     split_ratio: float = 0.2
     sample_ratio: float = 1.0
     column_name: str = "tweet"
@@ -37,8 +37,8 @@ class DatasetConfig:
 class ModelConfig:
     vocab_size: int = 50257
     n_embd: int = 512
-    n_head: int = 8
-    n_layers: int = 8
+    n_head: int = 1
+    n_layers: int = 1
     max_seq_len: int = 512
     padding_idx: int = 50256
     dropout_rate: float = 0.1 

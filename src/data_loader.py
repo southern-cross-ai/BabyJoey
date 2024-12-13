@@ -3,7 +3,12 @@ import torch
 from dataclasses import dataclass, field
 from datasets import load_dataset, DatasetDict
 from transformers import AutoTokenizer
-from config import DatasetConfig
+
+if __name__ == "__main__":
+    from config import DatasetConfig
+else:
+  from src.config import DatasetConfig
+
 
 class GetJoeyData:
     def __init__(self, config: DatasetConfig):
@@ -102,7 +107,7 @@ class GetJoeyData:
 
 if __name__ == "__main__":
     print("--------Testing----------")
-    config = DatasetConfig(tokenizer_name="gpt2")
+    config = DatasetConfig()
     data_handler = GetJoeyData(config)
 
     for batch in data_handler.train_loader:
