@@ -1,17 +1,19 @@
 import os
+from dataclasses import dataclass
 from huggingface_hub import login
 from datasets import load_dataset
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 import tiktoken
+from config import DatasetConfig
 
-class DataLoaderFactory:
-    def __init__(self, dataset_name, data_dir="data", chunk_size=512, stride=256, batch_size=32):
-        self.dataset_name = dataset_name
-        self.chunk_size = chunk_size
-        self.stride = stride
-        self.batch_size = batch_size
-        self.data_dir = data_dir
+class DataSetFactory:
+    def __init__(self, config: DatasetConfig):
+        self.dataset_name = config.dataset_name
+        self.chunk_size = config.chunk_size
+        self.stride = config.stride
+        self.batch_size = config.batch_size
+        self.data_dir = config.data_dir
 
         # Ensure the data directory exists
         os.makedirs(self.data_dir, exist_ok=True)
@@ -86,12 +88,16 @@ class DataLoaderFactory:
 
 # Example usage
 if __name__ == "__main__":
-    factory = DataLoaderFactory(
+    config = DatasetConfig(
         dataset_name="SouthernCrossAI/Project_Gutenberg_Australia",
         chunk_size=512,
         stride=256,
         batch_size=32
     )
+
+    factory = DataSetFactory(config)
+
+    
 
     train_dataset, val_dataset = factory.create_dataset()
 
