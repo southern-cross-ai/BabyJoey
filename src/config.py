@@ -25,7 +25,7 @@ class TrainingConfig:
 
 @dataclass
 class DataSetConfig:
-    dataset_name: str
+    dataset_name: str = "SouthernCrossAI/Project_Gutenberg_Australia"
     data_dir: str = "data"
     chunk_size: int = 512
     stride: int = 256

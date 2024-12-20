@@ -11,8 +11,10 @@ if __name__ == "__main__":
 else:
   from src.config import DataSetConfig
 
+
 class DataSetFactory:
     def __init__(self, config: DataSetConfig):
+        self.config = config
         self.dataset_name = config.dataset_name
         self.chunk_size = config.chunk_size
         self.stride = config.stride
@@ -79,7 +81,7 @@ class DataSetFactory:
 
         return tensor
 
-    def create_dataset(self):
+    def __call__(self):
         """Creates datasets for training and validation splits."""
         train_tensor = self.process_split("train")
         val_tensor = self.process_split("validation")
@@ -92,16 +94,8 @@ class DataSetFactory:
 
 # Example usage
 if __name__ == "__main__":
-    config = DataSetConfig(
-        dataset_name="SouthernCrossAI/Project_Gutenberg_Australia",
-        chunk_size=512,
-        stride=256,
-        batch_size=32
-    )
-
-    factory = DataSetFactory(config)
-
-    train_dataset, val_dataset = factory.create_dataset()
+    creat_data = DataSetFactory(DataSetConfig())
+    train_dataset, val_dataset = creat_data()
 
     # Create DataLoaders
     train_loader = DataLoader(train_dataset, batch_size=2, shuffle=True)
