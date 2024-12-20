@@ -14,11 +14,11 @@ class Embeddings(nn.Module):
     def __init__(self, config: ModelConfig):
         super().__init__()
         self.token_embedding = nn.Embedding(
-            config.vocab_size,
+            config.token_vocab_size,
             config.n_embd,
             padding_idx=config.padding_idx
         )
-        self.position_embedding = nn.Embedding(config.max_seq_len, config.n_embd)
+        self.position_embedding = nn.Embedding(config.context_window, config.n_embd)
         self.dropout = nn.Dropout(config.dropout_rate)
     
     def forward(self, x: Tensor) -> Tensor:
@@ -45,10 +45,10 @@ class MultiheadAttention(nn.Module):
 
         # Create a boolean causal mask
         causal_mask = torch.triu(
-            torch.ones((config.max_seq_len, config.max_seq_len), dtype=torch.bool),
+            torch.ones((config.context_window, config.context_window), dtype=torch.bool),
             diagonal=1
         )
-        self.register_buffer("causal_mask", causal_mask)  # [max_seq_len, max_seq_len]
+        self.register_buffer("causal_mask", causal_mask)  # [context_window, context_window]
 
     def forward(self, x: Tensor, key_padding_mask: Optional[Tensor] = None) -> Tensor:
         seq_len = x.size(1)
@@ -107,7 +107,7 @@ class BabyJoeyModel(nn.Module):
         self.embeddings = Embeddings(config)
         self.blocks = nn.ModuleList([TransformerBlock(config) for _ in range(config.n_layers)])
         self.ln_f = nn.LayerNorm(config.n_embd)
-        self.head = nn.Linear(config.n_embd, config.vocab_size, bias=True)
+        self.head = nn.Linear(config.n_embd, config.token_vocab_size, bias=True)
     
     def forward(self, x: Tensor) -> Tensor:
         # x: [batch_size, seq_len]
@@ -116,7 +116,7 @@ class BabyJoeyModel(nn.Module):
         for block in self.blocks:
             x = block(x, key_padding_mask=key_padding_mask)
         x = self.ln_f(x)  # [batch_size, seq_len, n_embd]
-        logits = self.head(x)  # [batch_size, seq_len, vocab_size]
+        logits = self.head(x)  # [batch_size, seq_len, token_vocab_size]
         return logits
 
 if __name__ == '__main__':
@@ -132,7 +132,7 @@ if __name__ == '__main__':
         # Generate random test data
         batch_size = 4
         seq_len = 16  # Use a smaller sequence length for testing
-        input_ids = torch.randint(0, config.vocab_size, (batch_size, seq_len))
+        input_ids = torch.randint(0, config.token_vocab_size, (batch_size, seq_len))
     
         # Add padding tokens for testing
         input_ids[:, -2:] = config.padding_idx  # Pad the last two tokens
@@ -141,8 +141,8 @@ if __name__ == '__main__':
         logits = model(input_ids)
 
         # Verify output shape
-        assert logits.shape == (batch_size, seq_len, config.vocab_size), (
-            f"Expected output shape {(batch_size, seq_len, config.vocab_size)}, got {logits.shape}"
+        assert logits.shape == (batch_size, seq_len, config.token_vocab_size), (
+            f"Expected output shape {(batch_size, seq_len, config.token_vocab_size)}, got {logits.shape}"
         )
 
         return f"Test passed! Output shape: {logits.shape}"

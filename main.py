@@ -1,4 +1,4 @@
-from src.data_loader import GetJoeyData
+from helper_scrips.dataloader import GetJoeyData
 from src.model import BabyJoeyModel
 from src.training import ModelTrainer
 from dataclasses import dataclass

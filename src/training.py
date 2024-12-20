@@ -102,8 +102,8 @@ if __name__ == '__main__':
     print('------------- Testing -----------------')
 
     class SimpleDataset(torch.utils.data.Dataset):
-        def __init__(self, size: int, seq_length: int, vocab_size: int):
-            self.data = torch.randint(0, vocab_size, (size, seq_length))
+        def __init__(self, size: int, seq_length: int, token_vocab_size: int):
+            self.data = torch.randint(0, token_vocab_size, (size, seq_length))
         
         def __len__(self):
             return len(self.data)
@@ -112,10 +112,10 @@ if __name__ == '__main__':
             return {'input_ids': self.data[idx]}
 
     class SimpleModel(nn.Module):
-        def __init__(self, vocab_size: int, embed_dim: int):
+        def __init__(self, token_vocab_size: int, embed_dim: int):
             super(SimpleModel, self).__init__()
-            self.embedding = nn.Embedding(vocab_size, embed_dim)
-            self.linear = nn.Linear(embed_dim, vocab_size)
+            self.embedding = nn.Embedding(token_vocab_size, embed_dim)
+            self.linear = nn.Linear(embed_dim, token_vocab_size)
         
         def forward(self, x: torch.Tensor) -> torch.Tensor:
             x = self.embedding(x)
@@ -123,9 +123,9 @@ if __name__ == '__main__':
             return logits
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    config = TrainingConfig(device=device, vocab_size=100, padding_idx=0)
+    config = TrainingConfig(device=device, token_vocab_size=100, padding_idx=0)
 
-    model = SimpleModel(vocab_size=100, embed_dim=64)
+    model = SimpleModel(token_vocab_size=100, embed_dim=64)
     train_dataset = SimpleDataset(100, 10, 100)
     val_dataset = SimpleDataset(50, 10, 100)
 
