@@ -24,21 +24,12 @@ class TrainingConfig:
     optimizer: tuple = (AdamW, {'weight_decay': 1e-2})
 
 @dataclass
-class DatasetConfig:
-    batch_size: int = 2
-    data_path: str = "SouthernCrossAI/Tweets_Australian_Cities"
-    context_window: int = 512
-    split_ratio: float = 0.2
-    sample_ratio: float = 1.0
-    column_name: str = "tweet"
-    tokenizer_name: str = "gpt2"
-    output_dir: str = field(init=False)
-
-    def __post_init__(self):
-        # Extract dataset name from the data_path
-        dataset_name = self.data_path.split("/")[-1]
-        # Incorporate the dataset name into the output directory
-        self.output_dir = f"./processed_data_{dataset_name}"
+class DataSetConfig:
+    dataset_name: str
+    data_dir: str = "data"
+    chunk_size: int = 512
+    stride: int = 256
+    batch_size: int = 32
 
 # Model configuration using dataclass
 @dataclass

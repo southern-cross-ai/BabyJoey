@@ -5,10 +5,14 @@ from datasets import load_dataset
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 import tiktoken
-from config import DatasetConfig
+
+if __name__ == "__main__":
+    from config import DataSetConfig
+else:
+  from src.config import DataSetConfig
 
 class DataSetFactory:
-    def __init__(self, config: DatasetConfig):
+    def __init__(self, config: DataSetConfig):
         self.dataset_name = config.dataset_name
         self.chunk_size = config.chunk_size
         self.stride = config.stride
@@ -88,7 +92,7 @@ class DataSetFactory:
 
 # Example usage
 if __name__ == "__main__":
-    config = DatasetConfig(
+    config = DataSetConfig(
         dataset_name="SouthernCrossAI/Project_Gutenberg_Australia",
         chunk_size=512,
         stride=256,
@@ -96,8 +100,6 @@ if __name__ == "__main__":
     )
 
     factory = DataSetFactory(config)
-
-    
 
     train_dataset, val_dataset = factory.create_dataset()
 
