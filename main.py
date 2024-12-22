@@ -4,6 +4,7 @@ from torch.optim import AdamW
 import torch.nn as nn
 from torch.utils.data import DataLoader, DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.cuda.amp import GradScaler, autocast  # For mixed precision
 from src.model import BabyJoeyModel
 from src.dataset import DataSetFactory
 from src.config import DataSetConfig, ModelConfig
@@ -27,13 +28,15 @@ train_dataset, val_dataset = dataset_factory()
 train_sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank, shuffle=True)
 val_sampler = DistributedSampler(val_dataset, num_replicas=world_size, rank=rank, shuffle=False)
 
-train_loader = DataLoader(train_dataset, batch_size=16, sampler=train_sampler)
-val_loader = DataLoader(val_dataset, batch_size=16, sampler=val_sampler)
+# DataLoader with increased `num_workers` for faster data loading
+train_loader = DataLoader(train_dataset, batch_size=8, sampler=train_sampler, num_workers=16, pin_memory=True)
+val_loader = DataLoader(val_dataset, batch_size=8, sampler=val_sampler, num_workers=16, pin_memory=True)
 
-# Initialize model, optimizer
+# Initialize model, optimizer, and scaler
 model = BabyJoeyModel(model_config).to(device)
 model = DDP(model, device_ids=[local_rank])  # Wrap model in DDP
 optimizer = AdamW(model.parameters(), lr=3e-4, weight_decay=1e-2)
+scaler = GradScaler()  # Mixed precision scaler
 
 # Loss function
 loss_fn = nn.CrossEntropyLoss(label_smoothing=0.1)
@@ -51,18 +54,19 @@ for epoch in range(num_epochs):
     for i, (inputs,) in enumerate(train_loader):
         inputs = inputs.to(device)
 
-        # Forward pass
-        logits = model(inputs)
-        loss = nn.functional.cross_entropy(
-            logits.view(-1, logits.size(-1)),
-            inputs.view(-1),
-            label_smoothing=0.1
-        )
+        # Mixed precision forward pass
+        with autocast():
+            logits = model(inputs)
+            loss = loss_fn(
+                logits.view(-1, logits.size(-1)),
+                inputs.view(-1)
+            )
 
         # Backward pass and optimization
+        scaler.scale(loss).backward()
+        scaler.step(optimizer)
+        scaler.update()
         optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
 
         total_loss += loss.item()
 
@@ -79,13 +83,14 @@ for epoch in range(num_epochs):
     with torch.no_grad():
         for inputs, in val_loader:
             inputs = inputs.to(device)
-            logits = model(inputs)
-            loss = nn.functional.cross_entropy(
-                logits.view(-1, logits.size(-1)),
-                inputs.view(-1),
-                label_smoothing=0.1
-            )
-            val_loss += loss.item()
+
+            with autocast():  # Mixed precision validation
+                logits = model(inputs)
+                loss = loss_fn(
+                    logits.view(-1, logits.size(-1)),
+                    inputs.view(-1)
+                )
+                val_loss += loss.item()
 
     # Average validation loss across all processes
     val_loss = torch.tensor(val_loss / len(val_loader)).to(device)
