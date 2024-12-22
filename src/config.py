@@ -36,8 +36,8 @@ class DataSetConfig:
 class ModelConfig:
     token_vocab_size: int = 100256
     n_embd: int = 512
-    n_head: int = 1
-    n_layers: int = 1
+    n_head: int = 8
+    n_layers: int = 12
     context_window: int = 512
     padding_idx: int = 512
     dropout_rate: float = 0.1 

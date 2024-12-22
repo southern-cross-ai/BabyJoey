@@ -27,8 +27,8 @@ train_dataset, val_dataset = dataset_factory()
 train_sampler = DistributedSampler(train_dataset, num_replicas=world_size, rank=rank, shuffle=True)
 val_sampler = DistributedSampler(val_dataset, num_replicas=world_size, rank=rank, shuffle=False)
 
-train_loader = DataLoader(train_dataset, batch_size=8, sampler=train_sampler)
-val_loader = DataLoader(val_dataset, batch_size=8, sampler=val_sampler)
+train_loader = DataLoader(train_dataset, batch_size=16, sampler=train_sampler)
+val_loader = DataLoader(val_dataset, batch_size=16, sampler=val_sampler)
 
 # Initialize model, optimizer
 model = BabyJoeyModel(model_config).to(device)
@@ -42,7 +42,7 @@ loss_fn = nn.CrossEntropyLoss(label_smoothing=0.1)
 best_val_loss = float("inf")
 
 # Training loop
-num_epochs = 2
+num_epochs = 10
 for epoch in range(num_epochs):
     model.train()
     train_sampler.set_epoch(epoch)  # Ensure shuffling in DistributedSampler
