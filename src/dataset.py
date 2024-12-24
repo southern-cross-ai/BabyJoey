@@ -1,6 +1,5 @@
 import os
 from dataclasses import dataclass
-# from huggingface_hub import login
 from datasets import load_dataset
 import torch
 from torch.utils.data import TensorDataset, DataLoader
@@ -12,11 +11,11 @@ else:
   from src.config import DataSetConfig
 
 
-class DataSetFactory:
+class DataSetCreate:
     def __init__(self, config: DataSetConfig):
         self.config = config
         self.dataset_name = config.dataset_name
-        self.chunk_size = config.chunk_size
+        self.context_window = config.context_window
         self.stride = config.stride
         self.batch_size = config.batch_size
         self.data_dir = config.data_dir
@@ -68,8 +67,8 @@ class DataSetFactory:
 
         # Create overlapping chunks
         chunks = [
-            all_tokens[i:i + self.chunk_size]
-            for i in range(0, len(all_tokens) - self.chunk_size + 1, self.stride)
+            all_tokens[i:i + self.context_window]
+            for i in range(0, len(all_tokens) - self.context_window + 1, self.stride)
         ]
         print(f"Number of overlapping chunks in {split}: {len(chunks)}")
 
@@ -94,7 +93,7 @@ class DataSetFactory:
 
 # Example usage
 if __name__ == "__main__":
-    creat_data = DataSetFactory(DataSetConfig())
+    creat_data = DataSetCreate(DataSetConfig())
     train_dataset, val_dataset = creat_data()
 
     # Create DataLoaders
@@ -107,7 +106,7 @@ if __name__ == "__main__":
     # Inspect the DataLoaders and decode the first two batches
     print("Training DataLoader:")
     for i, batch in enumerate(train_loader):
-        print(f"Batch {i + 1} shape: {batch[0].shape}")  # Should print [batch_size, chunk_size]
+        print(f"Batch {i + 1} shape: {batch[0].shape}")  # Should print [batch_size, context_window]
         decoded_texts = [tokenizer.decode(seq.tolist()) for seq in batch[0]]
         print("Decoded Texts:")
         for j, text in enumerate(decoded_texts):
@@ -117,7 +116,7 @@ if __name__ == "__main__":
 
     print("Validation DataLoader:")
     for i, batch in enumerate(val_loader):
-        print(f"Batch {i + 1} shape: {batch[0].shape}")  # Should print [batch_size, chunk_size]
+        print(f"Batch {i + 1} shape: {batch[0].shape}")  # Should print [batch_size, context_window]
         decoded_texts = [tokenizer.decode(seq.tolist()) for seq in batch[0]]
         print("Decoded Texts:")
         for j, text in enumerate(decoded_texts):

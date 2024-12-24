@@ -2,42 +2,30 @@ from dataclasses import dataclass, field
 import torch
 from torch.optim import AdamW
 
-class BabyConfig:
-    # Core configuration shared across components
+@dataclass
+class JoeyConfig:
     batch_size: int = 16
-    epoch = 2
-    context_window: int = 512
-    features = 512
-    padding_idx: int = 50256
+    epochs: int = 2  
+    context_window: int = 512  
     token_vocab_size: int = 50254
 
-# @dataclass
-# class TrainingConfig:
-#     device: torch.device
-#     token_vocab_size: int = 50226
-#     padding_idx: int = 50000
-#     learning_rate: float = 3e-4
-#     batch_size: int = 1
-#     label_smoothing: float = 0.1
-#     optimizer_name: str = "AdamW"  # Store as string instead of class
-#     optimizer_params: dict = field(default_factory=lambda: {"weight_decay": 1e-2})
-#     optimizer: tuple = (AdamW, {'weight_decay': 1e-2})
+# Create a single instance of JoeyConfig to share across components
+joey_config = JoeyConfig()
 
 @dataclass
 class DataSetConfig:
     dataset_name: str = "SouthernCrossAI/Project_Gutenberg_Australia"
     data_dir: str = "data"
-    chunk_size: int = 512
+    context_window: int = joey_config.context_window  
     stride: int = 256
-    batch_size: int = 2
+    batch_size: int = joey_config.batch_size  
 
-# Model configuration using dataclass
 @dataclass
 class ModelConfig:
-    token_vocab_size: int = 100256
+    token_vocab_size: int = joey_config.token_vocab_size 
     n_embd: int = 1280
     n_head: int = 16
     n_layers: int = 24
-    context_window: int = 512
+    context_window: int = joey_config.context_window  
     padding_idx: int = 512
-    dropout_rate: float = 0.1 
+    dropout_rate: float = 0.1

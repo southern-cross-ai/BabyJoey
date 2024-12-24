@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader, DistributedSampler
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.cuda.amp import GradScaler, autocast  # For mixed precision
 from src.model import BabyJoeyModel
-from src.dataset import DataSetFactory
+from src.dataset import DataSetCreate
 from src.config import DataSetConfig, ModelConfig
 import tiktoken
 
@@ -22,7 +22,7 @@ dataset_config = DataSetConfig()
 model_config = ModelConfig()
 
 # Load datasets
-dataset_factory = DataSetFactory(dataset_config)
+dataset_factory = DataSetCreate(dataset_config)
 train_dataset, val_dataset = dataset_factory()
 
 # Use DistributedSampler for data loading
